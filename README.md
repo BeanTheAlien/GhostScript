@@ -1,2 +1,8 @@
+# GhostScript
 This is the home of the GhostScript language!
-You probably know us as Ghost.
+
+# Version 0.0.0 pre-alpha
+
+# Changelog
+
+# Downloads
