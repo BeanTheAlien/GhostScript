@@ -1,4 +1,6 @@
-var grammar = {};
+var grammar = [
+    { "name": "variable", "regex": "(\\w)", "exec": (match) => {} }
+];
 
 var ghostMemory = { "variables": {}, "functions": {}, "methods": {}, "properties": {}, "types": {}, "classes": {} };
 var ghostVariables = {};
