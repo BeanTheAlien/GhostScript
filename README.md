@@ -4,7 +4,7 @@ This is the home of the GhostScript language!
 # Version 0.0.0 pre-alpha
 
 # Changelog
-## 0.0.0 pre-alpha
+**0.0.0 pre-alpha**
 Changes
 - Fixed variable grammar to move to add to ghostVariables.
 
