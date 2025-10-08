@@ -22,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/BeanTheAlien/GhostScript/issues"
   },
-  "homepage": "https://github.com/BeanTheAlien/GhostScript#readme"
+  "homepage": "https://github.com/BeanTheAlien/GhostScript#readme",
+  "dependencies": {
+    "https": "^1.0.0"
+  }
 }
