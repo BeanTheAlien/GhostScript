@@ -1,0 +1,26 @@
+{
+  "name": "ghostscript",
+  "version": "0.0.0",
+  "description": "This is the home of the GhostScript language!",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "ghostscript": "./bin/bin.js",
+    "ghost": "./bin/bin.js",
+    "gst": "./bin/bin.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BeanTheAlien/GhostScript.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/BeanTheAlien/GhostScript/issues"
+  },
+  "homepage": "https://github.com/BeanTheAlien/GhostScript#readme"
+}
