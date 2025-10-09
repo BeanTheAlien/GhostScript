@@ -9,11 +9,17 @@ class Player extends ge.PC {
         this.addComponents(
             ge.Phys(3),
             ge.Controls({
-                "w": this.moveForward(3),
-                "a": this.moveLeft(3),
-                "s": this.moveBackward(3),
-                "d": this.moveRight(3),
-                "space": this.jump(3)
+                w: this.moveForward(3),
+                a: this.moveLeft(3),
+                s: this.moveBackward(3),
+                d: this.moveRight(3),
+                space: this.jump(3)
+            }),
+            ge.Gun({
+                gun_mdl: ge.models.Pistol,
+                bullet_mdl: ge.models.Bullet,
+                bullet_speed: 3,
+                bullet_damage: 1
             })
         );
     }
