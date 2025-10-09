@@ -10,7 +10,7 @@ async function init() {
 
     const ask = (q) => new Promise(res => rl.question(q, res));
 
-    console.log("Let's make a new Ghost project!\n");
+    console.log("--- Creating New GhostScript Project ---");
 
     const name = await ask("Name: ");
     const description = await ask("Description: ");
@@ -20,7 +20,7 @@ async function init() {
     // project folder
     const projectDir = path.join(process.cwd(), name);
 
-    if (fs.existsSync(projectDir)) {
+    if(fs.existsSync(projectDir)) {
         console.error(`Error: Project "${name}" already exists here.`);
         return;
     }
@@ -32,15 +32,15 @@ async function init() {
         name,
         description,
         version: "0.0.1",
-        main: "main.ghost"
+        main: "main.gst"
     }, null, 2));
 
-    fs.writeFileSync(path.join(projectDir, "main.ghost"), "// Welcome to GhostScript!\n");
+    fs.writeFileSync(path.join(projectDir, "main.gst"), "// Welcome to GhostScript!\n");
 
-    console.log(`\n✅ Created Ghost project in: ${projectDir}`);
+    console.log(`\nCreated GhostScript project in: ${projectDir}`);
     console.log("Files:");
     console.log(` - ghost.json`);
-    console.log(` - main.ghost`);
+    console.log(` - main.gst`);
 }
 
 module.exports = { default: init };
