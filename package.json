@@ -2,7 +2,7 @@
   "name": "ghostscript",
   "version": "0.0.0",
   "description": "This is the home of the GhostScript language!",
-  "main": "main.js",
+  "main": "./src/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
