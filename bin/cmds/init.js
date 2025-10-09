@@ -14,20 +14,19 @@ async function init() {
 
     const name = await ask("Name: ");
     const description = await ask("Description: ");
+    const useTemplate = (await ask("Use template? (y/n): ")).trim().toLowerCase();
+    const templateName = useTemplate == "y" ? await ask("Template name: ") : null;
 
     rl.close();
 
-    // project folder
     const projectDir = path.join(process.cwd(), name);
-
-    if(fs.existsSync(projectDir)) {
+    if (fs.existsSync(projectDir)) {
         console.error(`Error: Project "${name}" already exists here.`);
         return;
     }
 
-    fs.mkdirSync(projectDir);
+    fs.mkdirSync(projectDir, { recursive: true });
 
-    // create base files
     fs.writeFileSync(path.join(projectDir, "ghost.json"), JSON.stringify({
         name,
         description,
@@ -37,10 +36,17 @@ async function init() {
 
     fs.writeFileSync(path.join(projectDir, "main.gst"), "// Welcome to GhostScript!\n");
 
+    if(templateName) {
+        const templateDir = path.join(__dirname, "../..", "templates", templateName);
+        if(fs.existsSync(templateDir)) {
+            fs.cpSync(templateDir, projectDir, { recursive: true });
+            console.log(`Applied template "${templateName}"`);
+        } else {
+            console.warn(`Template "${templateName}" not found.`);
+        }
+    }
+
     console.log(`\nCreated GhostScript project in: ${projectDir}`);
-    console.log("Files:");
-    console.log(` - ghost.json`);
-    console.log(` - main.gst`);
 }
 
 module.exports = { default: init };
