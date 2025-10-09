@@ -1,15 +1,10 @@
 # GhostScript
 This is the home of the GhostScript language!
 
-# Version 0.0.0 pre-alpha
+# Version 0.0.0
 
 # Changelog
-### 0.0.0 pre-alpha
-Changes
-- Fixed variable grammar to move to add to ghostVariables.
-
-Issues
-- Grammar has no solid pattern. (<a href="https://github.com/BeanTheAlien/GhostScript/issues/1">#1</a>)
+<!--><-->
 
 # Downloads
 ## Stable
