@@ -20,7 +20,7 @@ async function init() {
     rl.close();
 
     const projectDir = path.join(process.cwd(), name);
-    if (fs.existsSync(projectDir)) {
+    if(fs.existsSync(projectDir)) {
         console.error(`Error: Project "${name}" already exists here.`);
         return;
     }
@@ -45,6 +45,8 @@ async function init() {
             console.warn(`Template "${templateName}" not found.`);
         }
     }
+
+    fs.mkdirSync(path.join(projectDir, "/snapshots"));
 
     console.log(`\nCreated GhostScript project in: ${projectDir}`);
 }
