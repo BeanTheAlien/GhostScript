@@ -21,8 +21,15 @@ class Database {
             queueLimit: settings.queueLimit ?? 0
         });
         this.isPersistent = settings.isPersistent ?? true;
+        this.table = settings.table ?? null;
+    }
+    useTable(table) {
+        this.table = table;
     }
     async query(sql, args = []) {
         return await this.pool.query(sql, args);
+    }
+    async select(token) {
+        return await this.pool.query(`SELECT ${token} FROM ${this.table}`);
     }
 }
