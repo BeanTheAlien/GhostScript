@@ -1,10 +1,11 @@
 # GhostScript
 This is the home of the GhostScript language!
 
-# Version 0.0.0
+# Version 0.0.2
 
 # Changelog
-<!--><-->
+- Added new `upd` command. (runs `npm update ghostscript`)
+- Major change to stdlib
 
 # Downloads
 ## Stable
