@@ -13,15 +13,15 @@ function install(args) {
     const isRoot = parts.length == 1;
 
     // Try index.json first if it's a root module
-    if (isRoot) {
+    if(isRoot) {
         tryFetch(`${basePath}/index.json`, (exists) => {
-            if (exists) {
+            if(exists) {
                 // Folder module with index.json
                 downloadIndex(basePath);
             } else {
                 // Maybe a single root-level file (like test.js)
                 tryFetch(`${basePath}.js`, (fileExists) => {
-                    if (fileExists) {
+                    if(fileExists) {
                         const localFilePath = path.join(downTo, `${parts[0]}.js`);
                         downloadFile(`${basePath}.js`, localFilePath);
                     } else {
@@ -35,7 +35,7 @@ function install(args) {
         const fileUrl = `${basePath}.js`;
         const localFilePath = path.join(downTo, path.basename(fileUrl));
         tryFetch(fileUrl, (exists) => {
-            if (exists) downloadFile(fileUrl, localFilePath);
+            if(exists) downloadFile(fileUrl, localFilePath);
             else console.error(`Module "${moduleName}" not found.`);
         });
     }
@@ -55,14 +55,14 @@ function install(args) {
             let data = "";
             res.on("data", (chunk) => data += chunk);
             res.on("end", () => {
-                if (res.statusCode !== 200) {
+                if(res.statusCode != 200) {
                     console.error(`Failed to fetch module index (${res.statusCode})`);
                     return;
                 }
 
                 try {
                     const index = JSON.parse(data);
-                    if (!index.files || !Array.isArray(index.files)) {
+                    if(!index.files || !Array.isArray(index.files)) {
                         console.error("Invalid module index format.");
                         return;
                     }
@@ -72,7 +72,7 @@ function install(args) {
                         const localFilePath = path.join(downTo, file);
                         downloadFile(fileUrl, localFilePath);
                     });
-                } catch (err) {
+                } catch(err) {
                     console.error(`Error parsing module index: ${err.message}`);
                 }
             });
@@ -84,7 +84,7 @@ function install(args) {
     function downloadFile(url, dest) {
         console.log(`Downloading ${url} -> ${dest}`);
         https.get(url, (response) => {
-            if (response.statusCode === 200) {
+            if(response.statusCode == 200) {
                 const file = fs.createWriteStream(dest);
                 response.pipe(file);
                 file.on("finish", () => {
