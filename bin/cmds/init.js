@@ -47,6 +47,7 @@ async function init() {
     }
 
     fs.mkdirSync(path.join(projectDir, "/snapshots"));
+    fs.mkdirSync(path.join(projectDir, "/modules"));
 
     console.log(`\nCreated GhostScript project in: ${projectDir}`);
 }
