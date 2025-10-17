@@ -5,10 +5,12 @@ const path = require("path");
 function install(args) {
     const moduleName = args[0];
     if (!moduleName) return console.error("No module name provided.");
+    const downTo = args[1];
+    if(!downTo) return console.error("No download path provided.");
 
     const parts = moduleName.split(".");
     const basePath = `https://beanthealien.github.io/ghost/modules/${parts.join("/")}`;
-    const isRoot = parts.length === 1;
+    const isRoot = parts.length == 1;
 
     // Try index.json first if it's a root module
     if (isRoot) {
@@ -20,7 +22,7 @@ function install(args) {
                 // Maybe a single root-level file (like test.js)
                 tryFetch(`${basePath}.js`, (fileExists) => {
                     if (fileExists) {
-                        const localFilePath = path.join("C:/Users/benal/OneDrive/Desktop", `${parts[0]}.js`);
+                        const localFilePath = path.join(downTo, `${parts[0]}.js`);
                         downloadFile(`${basePath}.js`, localFilePath);
                     } else {
                         console.error(`Module "${moduleName}" not found.`);
@@ -31,7 +33,7 @@ function install(args) {
     } else {
         // Nested file like ghost.io or ghost/test
         const fileUrl = `${basePath}.js`;
-        const localFilePath = path.join("C:/Users/benal/OneDrive/Desktop", path.basename(fileUrl));
+        const localFilePath = path.join(downTo, path.basename(fileUrl));
         tryFetch(fileUrl, (exists) => {
             if (exists) downloadFile(fileUrl, localFilePath);
             else console.error(`Module "${moduleName}" not found.`);
@@ -67,7 +69,7 @@ function install(args) {
 
                     index.files.forEach(file => {
                         const fileUrl = `${baseUrl}/${file}`;
-                        const localFilePath = path.join("C:/Users/benal/OneDrive/Desktop", file);
+                        const localFilePath = path.join(downTo, file);
                         downloadFile(fileUrl, localFilePath);
                     });
                 } catch (err) {
