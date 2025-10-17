@@ -5,8 +5,8 @@ function run(args) {
     if(!fileName) return console.error("File name required.");
     child_process.exec(`node ${fileName}`, (err, stdout, stderr) => {
         if(err) return console.error(`exec error: ${err}`);
-        console.log(`stdout: ${stdout}`);
-        console.error(`stderr: ${stderr}`);
+        if(stderr.length) console.error(stderr);
+        else console.log(stdout);
     });
 }
 
