@@ -5,7 +5,7 @@ This is the home of the GhostScript language!
 
 # Changelog
 - Added new `upd` command. (runs `npm update ghostscript`)
-- Major change to stdlib
+- Major change to stdlib, you can find the full Ghost module at https://github.com/BeanTheAlien/GhostScript/ghost/modules/ghost
 
 # Downloads
 ## Stable
