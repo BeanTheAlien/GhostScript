@@ -3,10 +3,10 @@ const path = require("path");
 
 async function main() {
     const file = "test";
-    const json = fs.readFile("grammar.json", "utf8");
-    const ghostGrammar = JSON.parse(json);
-    const script = fs.readFile(path.join("../", `${file.gst}`), "utf8");
-    const tokens = await lexer(ghostGrammar, script);
+    const json = fs.readFileSync("grammar.json", "utf8");
+    const grammar = JSON.parse(json);
+    const script = fs.readFileSync(`${file}.gst`, "utf8");
+    const tokens = await lexer(grammar, script);
     await compile(tokens);
 }
 main();

@@ -7,8 +7,8 @@ function snapshot(args) {
     if(!file) return console.error("Cannot snapshot, missing file.")
     const date = new Date();
     const now = date.now();
-    const content = fs.readFileSync(file);
-    fs.writeFile(path.join(dir, `snapshot-${file}-${now}`), content);
+    const content = fs.readFileSync(file, "utf8");
+    fs.writeFileSync(path.join(dir, `snapshot-${file}-${now}`), content);
 }
 
 module.exports = { default: snapshot };
