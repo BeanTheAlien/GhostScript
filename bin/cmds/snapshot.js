@@ -7,7 +7,7 @@ function snapshot(args) {
     const file = args[0];
     if(!file) return console.error("Cannot snapshot, missing file.")
     const date = new Date();
-    const now = date.toString();
+    const now = date.toISOString().replace(/:/g, "-").replace(/\./, "-").replace("T", "_").replace("Z", "");
     const content = fs.readFileSync(file, "utf8");
     fs.writeFileSync(path.join(dir, `snapshot-${file}-${now}`), content);
 }
