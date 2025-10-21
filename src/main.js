@@ -112,6 +112,17 @@ async function getModule(name, subname) {
     };
 }
 
+function runFunc(func, ...args) {
+    const { gsFuncDesire, gsFuncType, gsFuncName, gsFuncArgs, gsFuncBody } = func;
+    gsFuncBody(...args);
+}
+function typeCheck(type, val) {
+    return type.gsTypeCheck(val);
+}
+function runOper(oper, lhs, rhs) {
+    return oper.gsOperatorExec(lhs, rhs);
+}
+
 // var ghostMemory = { "variables": {}, "functions": {}, "methods": {}, "properties": {}, "types": {}, "classes": {} };
 // var ghostVariables = {};
 // var ghostFunctions = {};
