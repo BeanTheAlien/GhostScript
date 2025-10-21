@@ -1,5 +1,6 @@
 [
     { "name": "var", "regex": "var" },
     { "name": "import", "regex": "import\\s+([a-zA-Z0-9_]+)" },
-    { "name": "func_exec", "regex": "\\w((.*)?)" }
+    { "name": "func_exec", "regex": "(\\w\\.)*\\w((.*)?)" },
+    { "name": "method_exec": "regex": "\\w\\.(\\w\\.)*((.*)?)" }
 ]
