@@ -20,20 +20,20 @@ main();
 async function lexer(grammar, script) {
     const tokens = [];
     const lines = script.split(/\r?\n/);
-    for (let line of lines) {
+    for(let line of lines) {
         line = line.trim();
-        if (!line) continue;
+        if(!line) continue;
         let matched = false;
-        for (const rule of grammar) {
+        for(const rule of grammar) {
             const regex = new RegExp(rule.regex);
             const m = line.match(regex);
-            if (m) {
+            if(m) {
                 tokens.push({ name: rule.name, match: m });
                 matched = true;
                 break;
             }
         }
-        if (!matched) console.error("Unrecognized line:", line);
+        if(!matched) console.error("Unrecognized line:", line);
     }
     return tokens;
 }
@@ -55,11 +55,11 @@ async function tokenize(script) {
             tokens.push({ id: "number", val: char });
             continue;
         }
-        if (['+', '-', '*', '/', '(', ')'].includes(char)) {
-      tokens.push({ type: 'OPERATOR', value: char });
-      current++;
-      continue;
-    }
+        if(["+", "-", "*", "/"].includes(char)) {
+            tokens.push({ id: "operator", val: char });
+            i++;
+            continue;
+        }
     }
 }
 
