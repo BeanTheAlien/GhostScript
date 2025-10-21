@@ -2,5 +2,9 @@
     {
         "name": "var",
         "regex": "var"
+    },
+    {
+        "name": "import",
+        "regex": "import\\s+(\\w)"
     }
 ]

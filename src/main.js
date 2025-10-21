@@ -1,10 +1,14 @@
 const fs = require("fs");
 const path = require("path");
+const https = require("https");
 
-var runtime = {};
+var runtime = {
+    modules: {},
+    scope: {}
+};
 
 async function main() {
-    const file = "test";
+    const file = "../test";
     const json = fs.readFileSync("grammar.json", "utf8");
     const grammar = JSON.parse(json);
     const script = fs.readFileSync(`${file}.gst`, "utf8");
@@ -14,12 +18,23 @@ async function main() {
 main();
 
 async function lexer(grammar, script) {
-    let tokens = [];
-    for(const entry of grammar) {
-        const { name, regex } = entry;
-        while(new RegExp(regex).test(script)) {
-            tokens.push({ name, match: script.match(regex) });
-            script = script.replace(regex, "");
+    const tokens = [];
+    let index = 0;
+    while (script.length > 0) {
+        let matched = false;
+        for (const { name, regex } of grammar) {
+            const r = new RegExp("^" + regex);
+            const m = script.match(r);
+            if (m) {
+                tokens.push({ name, match: m });
+                script = script.slice(m[0].length);
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            console.error("Unrecognized token near:", script.slice(0, 30));
+            break;
         }
     }
     return tokens;
@@ -28,43 +43,55 @@ async function lexer(grammar, script) {
 async function compile(tokens) {
     for(let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
+        const { name, match } = token;
         console.log(token);
+        if(name == "import") {
+            const lib = await getModule(match[1], match[1]);
+            runtime.modules[match[1]] = lib;
+        }
     }
+}
+
+async function getRemoteModule(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+            let data = "";
+            res.on("data", chunk => data += chunk);
+            res.on("end", () => resolve(data));
+        }).on("error", reject);
+    });
 }
 
 async function getModule(name, subname) {
     const url = `https://beanthealien.github.io/ghost/modules/${name}/${subname}.js`;
-    const mod = require(url);
-    const flat = {};
-    function flatten(arr, k) {
-        if(!Array.isArray(arr)) return;
-        for(const m of arr) {
-            const nk =
-                m.gsVarName ||
-                m.gsFuncName ||
-                m.gsMethodName ||
-                m.gsClassName ||
-                m.gsTypeName ||
-                m.gsPropName ||
-                m.gsModifierName ||
-                m.gsOperatorName ||
-                m.gsErrorName ||
-                m.gsEventName;
-            if(nk) flat[nk] = m;
-        }
+    const js = await getRemoteModule(url);
+    const mod = {};
+    const exports = {};
+    const module = { exports };
+
+    try {
+        const wrapped = new Function("module", "exports", jsCode);
+        wrapped(module, exports);
+    } catch (err) {
+        console.error(`Failed to execute module ${name}:`, err);
+        return null;
     }
-    flatten(mod.vars, "vars");
-    flatten(mod.funcs, "funcs");
-    flatten(mod.methods, "methods");
-    flatten(mod.classes, "classes");
-    flatten(mod.types, "types");
-    flatten(mod.props, "props");
-    flatten(mod.mods, "mods");
-    flatten(mod.errors, "errors");
-    flatten(mod.events, "events");
-    flatten(mod.operators, "operators");
+
+    const flat = {};
+    const m = module.exports;
+    flatten(m.vars);
+    flatten(m.funcs);
+    flatten(m.methods);
+    flatten(m.classes);
+    flatten(m.types);
+    flatten(m.props);
+    flatten(m.mods);
+    flatten(m.errors);
+    flatten(m.events);
+    flatten(m.operators);
+
     return {
-        meta: mod.ghostmodule,
+        meta: m.ghostmodule,
         exports: flat
     };
 }
