@@ -19,35 +19,38 @@ main();
 
 async function lexer(grammar, script) {
     const tokens = [];
-    let index = 0;
-    while(script.length > 0) {
+    const lines = script.split(/\r?\n/);
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
         let matched = false;
-        for(const { name, regex } of grammar) {
-            const r = new RegExp("^" + regex);
-            const m = script.match(r);
-            if(m) {
-                tokens.push({ name, match: m });
-                script = script.slice(m[0].length);
+        for (const rule of grammar) {
+            const regex = new RegExp(rule.regex);
+            const m = line.match(regex);
+            if (m) {
+                tokens.push({ name: rule.name, match: m });
                 matched = true;
                 break;
             }
         }
-        if(!matched) {
-            console.error("Unrecognized token near:", script.slice(0, 30));
-            break;
-        }
+        if (!matched) console.error("Unrecognized line:", line);
     }
     return tokens;
 }
 
 async function compile(tokens) {
-    for(let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        const { name, match } = token;
-        console.log(token);
-        if(name == "import") {
-            const lib = await getModule(match[1], match[1]);
-            runtime.modules[match[1]] = lib;
+    for(const { name, match } of tokens) {
+        switch(name) {
+            case "import":
+                const lib = await getModule(match[1], match[1]);
+                runtime.modules[match[1]] = lib;
+                break;
+            case "func_exec":
+                const funcName = match[1];
+                const args = parseArgs(match[2]);
+                const func = findFunction(funcName);
+                if(func) runFunc(func, ...args);
+                break;
         }
     }
 }
@@ -121,6 +124,21 @@ function typeCheck(type, val) {
 }
 function runOper(oper, lhs, rhs) {
     return oper.gsOperatorExec(lhs, rhs);
+}
+
+function parseArgs(argString) {
+    if(!argString.trim()) return [];
+    return argString.split(",").map(a => eval(a.trim()));
+}
+
+function findFunction(name) {
+    for(const modName in runtime.modules) {
+        const mod = runtime.modules[modName];
+        if(!mod.meta.reqroot && mod.exports[name]) {
+            return mod.exports[name];
+        }
+    }
+    return null;
 }
 
 // var ghostMemory = { "variables": {}, "functions": {}, "methods": {}, "properties": {}, "types": {}, "classes": {} };
