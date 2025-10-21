@@ -63,7 +63,7 @@ async function getRemoteModule(url) {
 }
 
 async function getModule(name, subname) {
-    const url = `https://beanthealien.github.io/ghost/modules/${name}/${subname}.js`;
+    const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/refs/heads/main/ghost/modules/${name}/${subname}.js`;
     const js = await getRemoteModule(url);
     const mod = {};
     const exports = {};

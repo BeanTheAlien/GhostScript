@@ -1,10 +1,4 @@
 [
-    {
-        "name": "var",
-        "regex": "var"
-    },
-    {
-        "name": "import",
-        "regex": "import\\s+(\\w)"
-    }
+    { "name": "var", "regex": "var" },
+    { "name": "import", "regex": "import\\s+([a-zA-Z0-9_]+)" }
 ]
