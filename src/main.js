@@ -99,7 +99,7 @@ async function compile(tokens) {
                 // match for function calls: optionally module.func(args) OR func(args)
                 // match format produced by your regex should be [ full, funcName, argstring ] OR [ full, maybeModule, funcName, argstring ]
                 // we'll accept both shapes:
-                if (match.length === 4) {
+                if (match.length == 4) {
                     // module.func(...)
                     const moduleName = match[1];
                     const funcName = match[2];
@@ -119,6 +119,16 @@ async function compile(tokens) {
                     if (func) runFunc(func, ...args);
                     else console.error(`Unknown function: ${funcName}`);
                 }
+                break;
+            }
+
+            case "method_exec": {
+                const target = match[1];
+                const methodName = match[2];
+                const args = parseArgs(match[3]);
+                const method = findMethod(target, methodName);
+                if(method) runMethod(method, target, ...args);
+                else console.error(`Unknown method: ${methodName} for target`, target);
                 break;
             }
 
@@ -219,19 +229,21 @@ async function getModule(name, subname) {
 
 function runFunc(func, ...args) {
     const { gsFuncDesire, gsFuncType, gsFuncName, gsFuncArgs, gsFuncBody } = func;
-    for(let i = 0; i < gsFuncArgs.length; i++) {
-        const fArg = gsFuncArgs[i];
-        const { gsArgName, gsArgVal, gsArgDesire, gsArgType } = fArg;
-        const arg = args[i];
-        if(arg != undefined) {
-            if(gsArgType) {
-                if(!typeCheck(gsArgType, arg)) {
-                    if(gsArgDesire) {
-                        // need type.parseTo
-                    } else throw new Error(`Cannot match type '${typeof arg}' to '${gsArgType.gsTypeName}'`);
+    if(gsFuncArgs) {
+        for(let i = 0; i < gsFuncArgs.length; i++) {
+            const fArg = gsFuncArgs[i];
+            const { gsArgName, gsArgVal, gsArgDesire, gsArgType } = fArg;
+            const arg = args[i];
+            if(arg != undefined) {
+                if(gsArgType) {
+                    if(!typeCheck(gsArgType, arg)) {
+                        if(gsArgDesire) {
+                            // need type.parseTo
+                        } else throw new Error(`Cannot match type '${typeof arg}' to '${gsArgType.gsTypeName}'`);
+                    }
                 }
-            }
-        } else if(gsArgVal != undefined) args[i] = gsArgVal;
+            } else if(gsArgVal != undefined) args[i] = gsArgVal;
+        }
     }
     const res = gsFuncBody(...args);
     if(res != undefined) {
@@ -240,6 +252,41 @@ function runFunc(func, ...args) {
                 if(gsFuncDesire) {
                     // need parse again
                 } else throw new Error(`Cannot match type '${typeof res}' to '${gsFuncType.gsTypeName}'`);
+            }
+        }
+    }
+    return res;
+}
+function runMethod(mthd, target, ...args) {
+    const { gsMethodDesire, gsMethodType, gsMethodAttach, gsMethodName, gsMethodArgs, gsMethodBody } = mthd;
+    if(Array.isArray(gsMethodAttach)) {
+        if(!gsMethodAttach.some(a => typeCheck(a, target))) throw new Error(`Method '${gsMethodName}' cannot be called on target of type '${typeof target}'`);
+    } else {
+        if(!typeCheck(gsMethodAttach, target)) throw new Error(`Method '${gsMethodName}' cannot be called on target of type '${typeof target}'`);
+    }
+    if(gsMethodArgs) {
+        for(let i = 0; i < gsMethodArgs.length; i++) {
+            const mArg = gsMethodArgs[i];
+            const { gsArgName, gsArgVal, gsArgDesire, gsArgType } = mArg;
+            const arg = args[i];
+            if(arg != undefined) {
+                if(gsArgType) {
+                    if(!typeCheck(gsArgType, arg)) {
+                        if(gsArgDesire) {
+                            // need type.parseTo
+                        } else throw new Error(`Cannot match type '${typeof arg}' to '${gsArgType.gsTypeName}'`);
+                    }
+                }
+            } else if(gsArgVal != undefined) args[i] = gsArgVal;
+        }
+    }
+    const res = gsMethodBody(target, ...args);
+    if(res != undefined) {
+        if(gsMethodType) {
+            if(!typeCheck(gsMethodType, res)) {
+                if(gsMethodDesire) {
+                    // need parse again
+                } else throw new Error(`Cannot match type '${typeof res}' to '${gsMethodType.gsTypeName}'`);
             }
         }
     }
@@ -274,6 +321,23 @@ function findFunction(name) {
         }
     }
 
+    return null;
+}
+
+function findMethod(targetType, name) {
+    for(const modName in runtime.modules) {
+        const mod = runtime.modules[modName];
+        if(!mod.meta.reqroot) {
+            for(const key in mod.exports) {
+                const m = mod.exports[key];
+                if(m.gsMethodName == name) {
+                    if(Array.isArray(m.gsMethodAttach)) {
+                        if(m.gsMethodAttach.some(t => typeCheck(t, targetType))) return m;
+                    } else if(typeCheck(m.gsMethodAttach, targetType)) return m;
+                }
+            }
+        }
+    }
     return null;
 }
 

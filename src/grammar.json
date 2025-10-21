@@ -1,6 +1,6 @@
 [
   { "name": "var", "regex": "^\\s*var\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*(.+)" },
   { "name": "import", "regex": "^\\s*import\\s+([a-zA-Z_][a-zA-Z0-9_]*)" },
-  { "name": "method_exec", "regex": "^\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\.([a-zA-Z_][a-zA-Z0-9_]*)\\(([^)]*)\\)" },
+  { "name": "method_exec", "regex": "^\\s*((?:\"[^\"]*\"|'[^']*'|[a-zA-Z_][a-zA-Z0-9_]*))\\.([a-zA-Z_][a-zA-Z0-9_]*)\\(([^)]*)\\)" },
   { "name": "func_exec", "regex": "^\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\(([^)]*)\\)" }
 ]
