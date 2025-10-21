@@ -3,6 +3,7 @@ const path = require("path");
 
 function snapshot(args) {
     const dir = path.join(__dirname, "../..", "snapshots");
+    if(!fs.existsSync(dir)) fs.mkdirSync(dir);
     const file = args[0];
     if(!file) return console.error("Cannot snapshot, missing file.")
     const date = new Date();
