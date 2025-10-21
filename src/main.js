@@ -117,7 +117,31 @@ async function getModule(name, subname) {
 
 function runFunc(func, ...args) {
     const { gsFuncDesire, gsFuncType, gsFuncName, gsFuncArgs, gsFuncBody } = func;
-    gsFuncBody(...args);
+    for(let i = 0; i < gsFuncArgs.length; i++) {
+        const fArg = gsFuncArgs[i];
+        const { gsArgName, gsArgVal, gsArgDesire, gsArgType } = fArg;
+        const arg = args[i];
+        if(arg) {
+            if(gsArgType) {
+                if(!typeCheck(gsArgType, arg)) {
+                    if(gsArgDesire) {
+                        // need type.parseTo
+                    } else throw new Error(`Cannot match type '${typeof arg}' to '${gsArgType}'`);
+                }
+            }
+        } else if(gsArgVal) args[i] = gsArgVal;
+    }
+    const res = gsFuncBody(...args);
+    if(res) {
+        if(gsFuncType) {
+            if(!typeCheck(gsFuncType, res)) {
+                if(gsFuncDesire) {
+                    // need parse again
+                } else throw new Error(`Cannot match type '${typeof res}' to '${gsFuncType}'`);
+            }
+        }
+    }
+    return res;
 }
 function typeCheck(type, val) {
     return type.gsTypeCheck(val);
