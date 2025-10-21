@@ -37,6 +37,23 @@ async function lexer(grammar, script) {
     }
     return tokens;
 }
+async function tokenize(script) {
+    let tokens = [];
+    let i = 0;
+    while(i < script.length) {
+        const char = script[i];
+        if(/\s/.test(char)) continue;
+        if(/\d/.test(char)) {
+            let val = "";
+            while(/\d/.test(char) && i < script.length) {
+                val += char;
+                char = script[++i];
+            }
+            tokens.push({ id: "number", val: char });
+            continue;
+        }
+    }
+}
 
 async function compile(tokens) {
     for(const { name, match } of tokens) {
