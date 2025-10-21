@@ -20,19 +20,19 @@ main();
 async function lexer(grammar, script) {
     const tokens = [];
     let index = 0;
-    while (script.length > 0) {
+    while(script.length > 0) {
         let matched = false;
-        for (const { name, regex } of grammar) {
+        for(const { name, regex } of grammar) {
             const r = new RegExp("^" + regex);
             const m = script.match(r);
-            if (m) {
+            if(m) {
                 tokens.push({ name, match: m });
                 script = script.slice(m[0].length);
                 matched = true;
                 break;
             }
         }
-        if (!matched) {
+        if(!matched) {
             console.error("Unrecognized token near:", script.slice(0, 30));
             break;
         }
@@ -76,7 +76,23 @@ async function getModule(name, subname) {
         console.error(`Failed to execute module ${name}:`, err);
         return null;
     }
-
+    function flatten(arr) {
+        if(!Array.isArray(arr)) return;
+        for(const m of arr) {
+            const nk =
+                m.gsVarName ||
+                m.gsFuncName ||
+                m.gsMethodName ||
+                m.gsClassName ||
+                m.gsTypeName ||
+                m.gsPropName ||
+                m.gsModifierName ||
+                m.gsOperatorName ||
+                m.gsErrorName ||
+                m.gsEventName;
+            if(nk) flat[nk] = m;
+        }
+    }
     const flat = {};
     const m = module.exports;
     flatten(m.vars);
