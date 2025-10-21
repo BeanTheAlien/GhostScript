@@ -9,7 +9,7 @@ function snapshot(args) {
     const date = new Date();
     const now = date.toISOString().replace(/:/g, "-").replace(/\./, "-").replace("T", "_").replace("Z", "");
     const content = fs.readFileSync(file, "utf8");
-    fs.writeFileSync(path.join(dir, `snapshot-${file}-${now}`), content);
+    fs.writeFileSync(path.join(dir, `snapshot-${file}-${now}.txt`), content);
 }
 
 module.exports = { default: snapshot };
