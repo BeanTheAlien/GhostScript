@@ -42,7 +42,10 @@ async function tokenize(script) {
     let i = 0;
     while(i < script.length) {
         const char = script[i];
-        if(/\s/.test(char)) continue;
+        if(/\s/.test(char)) {
+            i++;
+            continue;
+        }
         if(/\d/.test(char)) {
             let val = "";
             while(/\d/.test(char) && i < script.length) {
