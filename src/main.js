@@ -64,18 +64,73 @@ async function tokenize(script) {
 }
 
 async function compile(tokens) {
-    for(const { name, match } of tokens) {
-        switch(name) {
-            case "import":
-                const lib = await getModule(match[1], match[1]);
-                runtime.modules[match[1]] = lib;
+    for (const { name, match } of tokens) {
+        switch (name) {
+            case "import": {
+                const modName = match[1];
+                const lib = await getModule(modName, modName);
+                if (!lib) {
+                    console.error(`Could not load module ${modName}`);
+                    break;
+                }
+
+                // always keep module object available
+                runtime.modules[modName] = lib;
+
+                // if reqroot is false, inject exported names into runtime.scope
+                if (lib.meta && lib.meta.reqroot === false) {
+                    for (const [k, v] of Object.entries(lib.exports)) {
+                        // avoid clobbering existing names unless you want to
+                        if (runtime.scope[k]) {
+                            console.warn(`Skipping import of '${k}' from ${modName}: name conflict in global scope`);
+                            continue;
+                        }
+                        runtime.scope[k] = v;
+                    }
+                } else {
+                    // else expose under default root name
+                    const rootName = lib.meta.defroot || modName;
+                    runtime.scope[rootName] = lib.exports;
+                }
                 break;
-            case "func_exec":
-                const funcName = match[1];
-                const args = parseArgs(match[2]);
-                const func = findFunction(funcName);
-                if(func) runFunc(func, ...args);
+            }
+
+            case "func_exec": {
+                // match for function calls: optionally module.func(args) OR func(args)
+                // match format produced by your regex should be [ full, funcName, argstring ] OR [ full, maybeModule, funcName, argstring ]
+                // we'll accept both shapes:
+                if (match.length === 4) {
+                    // module.func(...)
+                    const moduleName = match[1];
+                    const funcName = match[2];
+                    const args = parseArgs(match[3]);
+                    const mod = runtime.modules[moduleName] || (runtime.scope[moduleName] && { exports: runtime.scope[moduleName] });
+                    if (mod && mod.exports && mod.exports[funcName]) {
+                        const fn = mod.exports[funcName];
+                        runFunc(fn, ...args);
+                    } else {
+                        console.error(`Unknown method ${moduleName}.${funcName}`);
+                    }
+                } else {
+                    // bare func(...)
+                    const funcName = match[1];
+                    const args = parseArgs(match[2]);
+                    const func = findFunction(funcName);
+                    if (func) runFunc(func, ...args);
+                    else console.error(`Unknown function: ${funcName}`);
+                }
                 break;
+            }
+
+            case "var": {
+                const varName = match[1];
+                const value = eval(match[2]); // prototype only
+                runtime.scope[varName] = value;
+                break;
+            }
+
+            default:
+                console.warn("Unhandled token:", name, match);
         }
     }
 }
@@ -93,49 +148,71 @@ async function getRemoteModule(url) {
 async function getModule(name, subname) {
     const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/refs/heads/main/ghost/modules/${name}/${subname}.js`;
     const js = await getRemoteModule(url);
-    const mod = {};
-    const exports = {};
-    const module = { exports };
-
+    const module = { exports: {} };
     try {
         const wrapped = new Function("module", "exports", js);
-        wrapped(module, exports);
+        wrapped(module, module.exports);
     } catch (err) {
         console.error(`Failed to execute module ${name}:`, err);
         return null;
     }
-    function flatten(arr) {
+    const m = module.exports || {};
+
+    // Build "flat" exports object that runtime expects.
+    // Support two cases:
+    //  1) module exported structured arrays: { funcs: [...], methods: [...], ... }
+    //  2) module already flattened: { wait: GSFunc, print: GSFunc, ghostmodule: {...} }
+    const flat = {};
+
+    // Helper to flatten arrays of GS* objects into flat[name] = object
+    function flattenArr(arr) {
         if(!Array.isArray(arr)) return;
-        for(const m of arr) {
+        for(const item of arr) {
             const nk =
-                m.gsVarName ||
-                m.gsFuncName ||
-                m.gsMethodName ||
-                m.gsClassName ||
-                m.gsTypeName ||
-                m.gsPropName ||
-                m.gsModifierName ||
-                m.gsOperatorName ||
-                m.gsErrorName ||
-                m.gsEventName;
-            if(nk) flat[nk] = m;
+                item?.gsVarName ||
+                item?.gsFuncName ||
+                item?.gsMethodName ||
+                item?.gsClassName ||
+                item?.gsTypeName ||
+                item?.gsPropName ||
+                item?.gsModifierName ||
+                item?.gsOperatorName ||
+                item?.gsErrorName ||
+                item?.gsEventName ||
+                item?.gsDirectiveName;
+            if(nk) flat[nk] = item;
         }
     }
-    const flat = {};
-    const m = module.exports;
-    flatten(m.vars);
-    flatten(m.funcs);
-    flatten(m.methods);
-    flatten(m.classes);
-    flatten(m.types);
-    flatten(m.props);
-    flatten(m.mods);
-    flatten(m.errors);
-    flatten(m.events);
-    flatten(m.operators);
+
+    // case (1) — structured arrays
+    flattenArr(m.vars);
+    flattenArr(m.funcs);
+    flattenArr(m.methods);
+    flattenArr(m.classes);
+    flattenArr(m.types);
+    flattenArr(m.props);
+    flattenArr(m.mods);
+    flattenArr(m.errors);
+    flattenArr(m.events);
+    flattenArr(m.operators);
+    flattenArr(m.directives);
+
+    // case (2) — flattened object (take everything except ghostmodule)
+    for(const [k, v] of Object.entries(m)) {
+        if(k == "ghostmodule") continue;
+        // avoid overwriting array-derived entries, keep whichever exists
+        if(!(k in flat)) flat[k] = v;
+    }
+
+    // If the module didn't provide ghostmodule meta, create a default
+    const meta = m.ghostmodule || {
+        name,
+        defroot: name,
+        reqroot: true
+    };
 
     return {
-        meta: m.ghostmodule,
+        meta,
         exports: flat
     };
 }
@@ -146,23 +223,23 @@ function runFunc(func, ...args) {
         const fArg = gsFuncArgs[i];
         const { gsArgName, gsArgVal, gsArgDesire, gsArgType } = fArg;
         const arg = args[i];
-        if(arg) {
+        if(arg != undefined) {
             if(gsArgType) {
                 if(!typeCheck(gsArgType, arg)) {
                     if(gsArgDesire) {
                         // need type.parseTo
-                    } else throw new Error(`Cannot match type '${typeof arg}' to '${gsArgType}'`);
+                    } else throw new Error(`Cannot match type '${typeof arg}' to '${gsArgType.gsTypeName}'`);
                 }
             }
-        } else if(gsArgVal) args[i] = gsArgVal;
+        } else if(gsArgVal != undefined) args[i] = gsArgVal;
     }
     const res = gsFuncBody(...args);
-    if(res) {
+    if(res != undefined) {
         if(gsFuncType) {
             if(!typeCheck(gsFuncType, res)) {
                 if(gsFuncDesire) {
                     // need parse again
-                } else throw new Error(`Cannot match type '${typeof res}' to '${gsFuncType}'`);
+                } else throw new Error(`Cannot match type '${typeof res}' to '${gsFuncType.gsTypeName}'`);
             }
         }
     }
@@ -176,17 +253,27 @@ function runOper(oper, lhs, rhs) {
 }
 
 function parseArgs(argString) {
-    if(!argString.trim()) return [];
-    return argString.split(",").map(a => eval(a.trim()));
+    if(!argString || !argString.trim()) return [];
+    const matches = argString.match(/("[^"]*"|'[^']*'|[^,]+)/g);
+    return matches ? matches.map(a => eval(a.trim())) : [];
 }
 
+// --- findFunction now checks runtime.scope (globals injected by reqroot:false) first,
+ // then modules for functions exported without reqroot. ---------------------
 function findFunction(name) {
-    for(const modName in runtime.modules) {
+    // 1) direct global scope (injected by reqroot:false)
+    if (runtime.scope && runtime.scope[name]) return runtime.scope[name];
+
+    // 2) module exports for modules that didn't require root (or for namespaced modules if someone flattened them)
+    for (const modName in runtime.modules) {
         const mod = runtime.modules[modName];
-        if(!mod.meta.reqroot && mod.exports[name]) {
-            return mod.exports[name];
+        if (!mod || !mod.exports) continue;
+        // if module requested root, skip direct matching unless someone explicitly called without module prefix.
+        if (!mod.meta || mod.meta.reqroot === false) {
+            if (mod.exports[name]) return mod.exports[name];
         }
     }
+
     return null;
 }
 
@@ -198,7 +285,7 @@ function findFunction(name) {
 // var ghostTypes = {}; // basic: "name": "something", "gstname": "something", "test": () => { return ... }
 // var ghostClasses = {};
 // var ghostErrors = {};
-// // var ghostConsole = document.createElement("div");
+// var ghostConsole = document.createElement("div");
 
 // function preprocess(script) {}
 // function compile(script) {}
