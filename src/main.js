@@ -70,7 +70,7 @@ async function getModule(name, subname) {
     const module = { exports };
 
     try {
-        const wrapped = new Function("module", "exports", jsCode);
+        const wrapped = new Function("module", "exports", js);
         wrapped(module, exports);
     } catch (err) {
         console.error(`Failed to execute module ${name}:`, err);
