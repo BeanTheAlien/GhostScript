@@ -55,6 +55,11 @@ async function tokenize(script) {
             tokens.push({ id: "number", val: char });
             continue;
         }
+        if (['+', '-', '*', '/', '(', ')'].includes(char)) {
+      tokens.push({ type: 'OPERATOR', value: char });
+      current++;
+      continue;
+    }
     }
 }
 
