@@ -110,6 +110,40 @@ function tokenize(script) {
     }
     return tokens;
 }
+async function parser(tokens) {
+    for(const { id, val } of tokens) {
+        if(id == "unknown") throw new Error(`Unknown token with value '${val}'.`);
+        if(id == "keyword") {
+            if(val == "import") {
+                const modName = match[1];
+                const lib = await getModule(modName, modName);
+                if (!lib) {
+                    console.error(`Could not load module ${modName}`);
+                    break;
+                }
+
+                // always keep module object available
+                runtime.modules[modName] = lib;
+
+                // if reqroot is false, inject exported names into runtime.scope
+                if (lib.meta && lib.meta.reqroot === false) {
+                    for (const [k, v] of Object.entries(lib.exports)) {
+                        // avoid clobbering existing names unless you want to
+                        if (runtime.scope[k]) {
+                            console.warn(`Skipping import of '${k}' from ${modName}: name conflict in global scope`);
+                            continue;
+                        }
+                        runtime.scope[k] = v;
+                    }
+                } else {
+                    // else expose under default root name
+                    const rootName = lib.meta.defroot || modName;
+                    runtime.scope[rootName] = lib.exports;
+                }
+            }
+        }
+    }
+}
 
 async function compile(tokens) {
     for (const { name, match } of tokens) {
