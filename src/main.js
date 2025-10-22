@@ -37,46 +37,78 @@ async function lexer(grammar, script) {
     }
     return tokens;
 }
-async function tokenize(script) {
-    let tokens = [];
+function tokenize(script) {
+    const tokens = [];
     let i = 0;
     while(i < script.length) {
         let char = script[i];
+        // skip whitespace
         if(/\s/.test(char)) {
             i++;
             continue;
         }
+
+        // numbers
         if(/\d/.test(char)) {
             let val = "";
-            while(/\d/.test(char) && i < script.length) {
-                val += char;
-                char = script[++i];
+            while(/\d|\./.test(script[i])) {
+                val += script[i++];
             }
-            tokens.push({ id: "number", val: char, idx: i });
+            tokens.push({ id: "num", val });
             continue;
         }
-        if(["+", "-", "*", "/", "%"].includes(char)) {
-            tokens.push({ id: "operator", val: char, idx: i });
+
+        // identifiers or keywords
+        if(/[a-zA-Z_]/.test(char)) {
+            let val = "";
+            while(/[a-zA-Z0-9_]/.test(script[i])) {
+                val += script[i++];
+            }
+            const type = ["var", "import", "if", "else", "while", "return"].includes(val)
+                ? "keyword"
+                : "identifier";
+            tokens.push({ id: type, val });
+            continue;
+        }
+
+        // strings
+        if(char == "\"" || char == "'") {
+            const quote = char;
+            let val = "";
+            i++;
+            while(i < script.length && script[i] != quote) {
+                if(script[i] == "\\") {
+                    val += script[i++];
+                    if(i < script.length) val += script[i];
+                } else val += script[i];
+                i++;
+            }
+            i++; // skip closing quote
+            tokens.push({ id: "string", val });
+            continue;
+        }
+
+        // two-char operators
+        const twoChar = script.slice(i, i + 2);
+        if(["==", "!=", ">=", "<=", "&&", "||", "=>"].includes(twoChar)) {
+            tokens.push({ id: "opr", val: twoChar });
+            i += 2;
+            continue;
+        }
+
+        // single-char operators / symbols
+        if("+-*/%<>=(){}[],.".includes(char)) {
+            const type = "(){}".includes(char) ? "paren" : "opr";
+            tokens.push({ id: type, val: char });
             i++;
             continue;
         }
-        if(char == "(") {
-            tokens.push({ id: "lparen", val: char, idx: i });
-            i++;
-            continue;
-        }
-        if(char == ")") {
-            tokens.push({ id: "rparen", val: char, idx: i });
-            i++;
-            continue;
-        }
-        if(["import", "function", "method", "prop", "class"].includes(char)) {
-            tokens.push({ id: "keyword", val: char, idx: i });
-            i++;
-            continue;
-        }
-        tokens.push({ id: "UNKNOWN", val: char, idx: i });
+
+        // if we reach here, it's unknown
+        tokens.push({ id: "unknown", val: char });
+        i++;
     }
+    return tokens;
 }
 
 async function compile(tokens) {
