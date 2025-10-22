@@ -9,6 +9,13 @@ The Autodebugger API is AI-powered to analyze your script to solve errors and in
 The Context Awareness API tries to figure out "what you meant".\
 The Ghost Assistant API is able to help you with development within Ghost - be it learning, scripting or anything else you might need.
 
+# Why GhostScript
+GhostScript is built to make programming easier, not stricter. If you want something added at the core level, *you can add it*.
+Where other languages punish mistakes or limit creativity, Ghost gives you total control.
+Use the same name for a variable, function and method? Fine. Add spaces or symbols for readability? Go ahead. Want to ***create your own operator?*** Please do.
+Ghost is alive and evolving - its creator, @BeanTheAlien, keeps pushing updates that expand what a scripting language can do.
+Got a project? Try GhostScript and see how much simpler coding can feel.
+
 # Version 0.0.5
 
 <!--# Downloads
