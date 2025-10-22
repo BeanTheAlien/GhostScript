@@ -52,11 +52,11 @@ async function tokenize(script) {
                 val += char;
                 char = script[++i];
             }
-            tokens.push({ id: "number", val: char });
+            tokens.push({ id: "number", val: char, idx: i });
             continue;
         }
-        if(["+", "-", "*", "/"].includes(char)) {
-            tokens.push({ id: "operator", val: char });
+        if(["+", "-", "*", "/", "%"].includes(char)) {
+            tokens.push({ id: "operator", val: char, idx: i });
             i++;
             continue;
         }
