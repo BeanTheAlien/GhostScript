@@ -70,6 +70,11 @@ async function tokenize(script) {
             i++;
             continue;
         }
+        if(["import", "function", "method", "prop", "class"].includes(char)) {
+            tokens.push({ id: "keyword", val: char, idx: i });
+            i++;
+            continue;
+        }
         tokens.push({ id: "UNKNOWN", val: char, idx: i });
     }
 }
