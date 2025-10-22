@@ -49,7 +49,7 @@ Click `Run > Run with debugging` (select GhostScript as your running option if p
 Navigate to your script.
 Click `Run` or the green arrow.
 ## Making A Hello World
-*For a full guide to development with GhostScript, see **(Ghost For Dummies)[https://docs.google.com/document/d/1yntdIvCY6ATQ7Lp2TrRnakA3mU7svRQF1-CldOq83hc/edit?usp=drivesdk]***
+*For a full guide to development with GhostScript, see **[Ghost For Dummies](https://docs.google.com/document/d/1yntdIvCY6ATQ7Lp2TrRnakA3mU7svRQF1-CldOq83hc/edit?usp=drivesdk)***
 
 # Documentation
 <a href="https://docs.google.com/document/d/1v5lAGBtDkGrv2eEFVrlzB9dqm6KoyQWsBLZ5BTpgsb0/edit?usp=sharing">GhostScript docs</a>
