@@ -34,7 +34,7 @@ Install by download:
 ## Running A Script
 **VS Code**\
 Navigate to your script.\
-Click `Run > Run with debugging` (select GhostScript as your running option if prompted).\
+Click `Run > Run and Debug` (select GhostScript as your running option if prompted).\
 **GhostScript IDE**\
 Navigate to your script.\
 Click `Run` or the green arrow.
