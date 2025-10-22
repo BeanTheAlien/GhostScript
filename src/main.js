@@ -41,7 +41,7 @@ async function tokenize(script) {
     let tokens = [];
     let i = 0;
     while(i < script.length) {
-        const char = script[i];
+        let char = script[i];
         if(/\s/.test(char)) {
             i++;
             continue;
@@ -60,6 +60,17 @@ async function tokenize(script) {
             i++;
             continue;
         }
+        if(char == "(") {
+            tokens.push({ id: "lparen", val: char, idx: i });
+            i++;
+            continue;
+        }
+        if(char == ")") {
+            tokens.push({ id: "rparen", val: char, idx: i });
+            i++;
+            continue;
+        }
+        tokens.push({ id: "UNKNOWN", val: char, idx: i });
     }
 }
 
