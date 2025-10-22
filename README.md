@@ -11,14 +11,14 @@ The Ghost Assistant API is able to help you with development within Ghost - be i
 
 # Version 0.0.5
 
-# Downloads
-## Stable
+<!--# Downloads
+## Stable-->
 <!--ghostscript - <a href="" download>download</a>-->
 
-## Unstable
+<!--## Unstable-->
 <!--ghostscript - <a href="" download>download</a>-->
 
-# Install
+<!--# Install-->
 <!--Install with npm:
 ```
 npm install ghostscript
