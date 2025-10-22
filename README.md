@@ -3,11 +3,11 @@ This is the home of the GhostScript language!
 
 # About
 GhostScript is a free, open-source programming language designed to simplify your scripting experience and handle the hard parts for you.\
-Ghost offers an expansive pre-proccessor system to deal with dependencies before the script is executed.\
+Ghost offers an expansive preproccessor system to deal with dependencies before the script is executed.\
 Ghost also includes the Autodebugger API, Context Awareness API and Ghost Assistant API.\
-The Autodebugger API uses an AI-powered model to analyze your script to solve errors and include documentation.\
-The Context Awareness API uses a mix of JavaScript and AI to figure out "what you meant".\
-The Ghost Assistant API uses an AI-powered model to help you with development within Ghost - be it learning, scripting or anything else you might need.
+The Autodebugger API is AI-powered to analyze your script to solve errors and include documentation.\
+The Context Awareness API tries to figure out "what you meant".\
+The Ghost Assistant API is able to help you with development within Ghost - be it learning, scripting or anything else you might need.
 
 # Version 0.0.5
 
@@ -20,7 +20,9 @@ The Ghost Assistant API uses an AI-powered model to help you with development wi
 
 # Install
 <!--Install with npm:
-`npm install ghostscript`
+```
+npm install ghostscript
+```
 
 Install by download:
 1. Go to the downloads section.
@@ -68,7 +70,7 @@ function main() {
     console.writeline("Hello, World!");
 }
 ```
-Try running your script, you should see "Hello, World!".
+Try running your script - you should see "Hello, World!".
 
 # Documentation
 <a href="https://docs.google.com/document/d/1v5lAGBtDkGrv2eEFVrlzB9dqm6KoyQWsBLZ5BTpgsb0/edit?usp=sharing">GhostScript docs</a>
@@ -82,3 +84,6 @@ Try running your script, you should see "Hello, World!".
 - Updated src/main to fix a lot of errors.
 ## 0.0.5
 - Updated src/main to add method support and fixed errors.
+
+# Roadmap
+- More comprehensive lexer/compiler. (v0.0.6)
