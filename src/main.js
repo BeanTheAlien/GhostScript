@@ -9,10 +9,10 @@ var runtime = {
 
 async function main() {
     const file = "../test";
-    const json = fs.readFileSync("grammar.json", "utf8");
-    const grammar = JSON.parse(json);
+    //const json = fs.readFileSync("grammar.json", "utf8");
+    //const grammar = JSON.parse(json);
     const script = fs.readFileSync(`${file}.gst`, "utf8");
-    const tokens = await lexer(grammar, script);
+    //const tokens = await lexer(grammar, script);
     //await compile(tokens);
     await parser(tokenize(script));
     console.log("ghost" in runtime.modules);
@@ -49,7 +49,10 @@ function tokenize(script) {
             i++;
             continue;
         }
-        if(char == "/" && script[i + 1] == "/") while(script[i] != "\n") i++;
+        if(char == "/" && script[i + 1] == "/") {
+            while(script[i] != "\n") i++;
+            continue;
+        }
 
         // numbers
         if(/\d/.test(char)) {
@@ -100,7 +103,7 @@ function tokenize(script) {
         }
 
         // single-char operators
-        if("+-*/%<>=,.".includes(char)) {
+        if("+-*/%<>=".includes(char)) {
             tokens.push({ id: "opr", val: char });
             i++;
             continue;
@@ -111,7 +114,7 @@ function tokenize(script) {
             continue;
         }
         if(char == ".") {
-            tokens.push({ id: "period", val: char });
+            tokens.push({ id: "dot", val: char });
             i++;
             continue;
         }
@@ -162,7 +165,7 @@ async function parser(tokens) {
         }
         const expr = parseExpr(tokens, i);
         i = expr.next;
-        interpret(expr.node);
+        interp(expr.node);
     }
     // for(let i = 0; i < tokens.length; i++) {
     //     const { id, val } = tokens[i];
@@ -204,7 +207,7 @@ async function parser(tokens) {
     //             const func = findFunction(funcName);
     //             runFunc(func, ...args.args);
     //         }
-    //         else if(tokens[i+1] && tokens[i+1].id == "period" && tokens[i+3] && tokens[i+3].id == "lparen") {
+    //         else if(tokens[i+1] && tokens[i+1].id == "dot" && tokens[i+3] && tokens[i+3].id == "lparen") {
     //             const methodTarget = val;
     //             const methodName = tokens[i+2].val;
     //             i += 2;
@@ -246,8 +249,8 @@ function parseFunc(tokens, i) {
 function parseExpr(tokens, i) {
     let node = parsePrim(tokens, i);
     let next = tokens[node.next];
-    while(next && (next.id == "period" || next.id == "lparen")) {
-        if(next.id == "period") {
+    while(next && (next.id == "dot" || next.id == "lparen")) {
+        if(next.id == "dot") {
             const prop = tokens[node.next + 1];
             node = {
                 type: "MemberExpression",
@@ -277,7 +280,7 @@ function parsePrim(tokens, i) {
         if(tokens[expr.next].type != "rparen") throw new Error("Expected ')'.");
         return { node: expr.node, next: expr.next + 1 };
     }
-    throw new Error(`Unexpected token '${token.val}'.`);
+    throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
 function parseArguments(tokens, i) {
     const args = [];
@@ -290,7 +293,27 @@ function parseArguments(tokens, i) {
     if(tokens[i].id == "rparen") throw new Error("Expected ')'.");
     return { args, next: i + 1 };
 }
-function interpret(node) {}
+function interp(node) {
+    switch(node.type) {
+        case "Literal":
+            return node.val;
+        case "Identifier":
+            return runtime.scope[node.val] ?? node.val;
+        case "MemberExpression":
+            const obj = interp(node.object);
+            return obj[node.prop.val];
+        case "CallExpression":
+            const callee = interp(node.callee);
+            const args = node.args.map(a => interp(a));
+            // func or method
+            if(typeof callee == "function") return callee(...args);
+            if(callee.gsFuncBody) return runFunc(callee, ...args);
+            if(callee.gsMethodBody) return runMethod(callee, obj, ...args);
+            throw new Error(`Cannot call '${callee}'.`);
+        default:
+            throw new Error(`Unknown node with type '${node.type}'.`);
+    }
+}
 
 async function compile(tokens) {
     for (const { name, match } of tokens) {
