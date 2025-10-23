@@ -91,6 +91,7 @@ Try running your script - you should see "Hello, World!".
 - Updated src/main to fix a lot of errors.
 ## 0.0.5
 - Updated src/main to add method support and fixed errors.
+- Updated src/main to work on the parser to support funcs. Started working on method support.
 
 # Roadmap
 - More comprehensive lexer/compiler. (v0.0.6)
