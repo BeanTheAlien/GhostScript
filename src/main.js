@@ -280,6 +280,7 @@ function parsePrim(tokens, i) {
         if(tokens[expr.next].type != "rparen") throw new Error("Expected ')'.");
         return { node: expr.node, next: expr.next + 1 };
     }
+    if(token.id == "dot") return { node: { id: "Dot", val: token.val }, next: i + 1 };
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
 function parseArguments(tokens, i) {
@@ -288,13 +289,13 @@ function parseArguments(tokens, i) {
         const expr = parseExpr(tokens, i);
         args.push(expr.node);
         i = expr.next;
-        if(tokens[i].id && tokens[i].id == "comma") i++;
+        if(tokens[i]?.id == "comma") i++;
     }
-    if(tokens[i].id == "rparen") throw new Error("Expected ')'.");
+    if(tokens[i]?.id == "rparen") throw new Error("Expected ')'.");
     return { args, next: i + 1 };
 }
 function interp(node) {
-    switch(node.type) {
+    switch(node.id) {
         case "Literal":
             return node.val;
         case "Identifier":
@@ -311,7 +312,7 @@ function interp(node) {
             if(callee.gsMethodBody) return runMethod(callee, obj, ...args);
             throw new Error(`Cannot call '${callee}'.`);
         default:
-            throw new Error(`Unknown node with type '${node.type}'.`);
+            throw new Error(`Unknown node with type '${node?.type}'.`);
     }
 }
 
