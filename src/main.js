@@ -13,7 +13,9 @@ async function main() {
     const grammar = JSON.parse(json);
     const script = fs.readFileSync(`${file}.gst`, "utf8");
     const tokens = await lexer(grammar, script);
-    await compile(tokens);
+    //await compile(tokens);
+    await parser(tokenize(script));
+    console.log("ghost" in runtime.modules);
 }
 main();
 
@@ -66,7 +68,7 @@ function tokenize(script) {
             }
             const type = ["var", "import", "if", "else", "while", "return"].includes(val)
                 ? "keyword"
-                : "identifier";
+                : "id";
             tokens.push({ id: type, val });
             continue;
         }
@@ -96,9 +98,15 @@ function tokenize(script) {
             continue;
         }
 
-        // single-char operators / symbols
-        if("+-*/%<>=(){}[],.".includes(char)) {
-            const type = "(){}".includes(char) ? "paren" : "opr";
+        // single-char operators
+        if("+-*/%<>=,.".includes(char)) {
+            tokens.push({ id: "opr", val: char });
+            i++;
+            continue;
+        }
+
+        if(char == "(" || char == ")") {
+            const type = char == "(" ? "lparen" : "rparen";
             tokens.push({ id: type, val: char });
             i++;
             continue;
@@ -111,11 +119,12 @@ function tokenize(script) {
     return tokens;
 }
 async function parser(tokens) {
-    for(const { id, val } of tokens) {
+    for(let i = 0; i < tokens.length; i++) {
+        const { id, val } = tokens[i];
         if(id == "unknown") throw new Error(`Unknown token with value '${val}'.`);
         if(id == "keyword") {
-            if(val == "import") {
-                const modName = match[1];
+            if(val == "import" && tokens[i+1].id == "id") {
+                const modName = tokens[i+1].val;
                 const lib = await getModule(modName, modName);
                 if (!lib) {
                     console.error(`Could not load module ${modName}`);
@@ -126,7 +135,7 @@ async function parser(tokens) {
                 runtime.modules[modName] = lib;
 
                 // if reqroot is false, inject exported names into runtime.scope
-                if (lib.meta && lib.meta.reqroot === false) {
+                if (lib.meta && lib.meta.reqroot == false) {
                     for (const [k, v] of Object.entries(lib.exports)) {
                         // avoid clobbering existing names unless you want to
                         if (runtime.scope[k]) {
@@ -142,7 +151,44 @@ async function parser(tokens) {
                 }
             }
         }
+        if(id == "id") {
+            if(tokens[i+1] && tokens[i+1].id == "lparen") {
+                const funcName = val;
+                const args = parseFunc(tokens, i);
+                i = args.nextI;
+                console.log(args.args);
+                const func = findFunction(funcName);
+                runFunc(func, ...args.args);
+            }
+        }
     }
+}
+function parseFunc(tokens, i) {
+    i += 2;
+    let args = [];
+    let curArg = [];
+    let depth = 1;
+    while(i < tokens.length && depth > 0) {
+        let tk = tokens[i];
+        if(tk.id == "lparen") {
+            depth++;
+            curArg.push(tk);
+        } else if(tk.id == "rparen") {
+            depth--;
+            if(depth > 0) curArg.push(tk);
+        } else if(tk.val == "," && depth == 1) {
+            args.push(curArg);
+            curArg = [];
+        } else {
+            curArg.push(tk);
+        }
+        i++;
+    }
+    if(curArg.length) args.push(curArg);
+    return {
+        args,
+        nextI: i
+    };
 }
 
 async function compile(tokens) {
