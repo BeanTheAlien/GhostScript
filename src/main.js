@@ -49,6 +49,7 @@ function tokenize(script) {
             i++;
             continue;
         }
+        if(char == "/" && script[i + 1] == "/") while(script[i] != "\n") i++;
 
         // numbers
         if(/\d/.test(char)) {
@@ -156,8 +157,9 @@ async function parser(tokens) {
                 const funcName = val;
                 const args = parseFunc(tokens, i);
                 i = args.nextI;
-                console.log(args.args);
                 const func = findFunction(funcName);
+                console.log(i);
+                console.log(func);
                 runFunc(func, ...args.args);
             }
         }
