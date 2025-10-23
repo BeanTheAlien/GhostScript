@@ -105,6 +105,16 @@ function tokenize(script) {
             i++;
             continue;
         }
+        if(char == ",") {
+            tokens.push({ id: "comma", val: char });
+            i++;
+            continue;
+        }
+        if(char == ".") {
+            tokens.push({ id: "period", val: char });
+            i++;
+            continue;
+        }
 
         if(char == "(" || char == ")") {
             const type = char == "(" ? "lparen" : "rparen";
@@ -158,9 +168,16 @@ async function parser(tokens) {
                 const args = parseFunc(tokens, i);
                 i = args.nextI;
                 const func = findFunction(funcName);
-                console.log(i);
-                console.log(func);
                 runFunc(func, ...args.args);
+            }
+            else if(tokens[i+1] && tokens[i+1].id == "period" && tokens[i+3].id == "lparen") {
+                const methodTarget = val;
+                const methodName = tokens[i+2].val;
+                i += 2;
+                const args = parseFunc(tokens, i);
+                i = args.nextI;
+                const method = findMethod(id, methodName);
+                runMethod(method, methodTarget, ...args.args);
             }
         }
     }
