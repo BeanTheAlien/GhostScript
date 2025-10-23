@@ -84,11 +84,11 @@ Try running your script - you should see "Hello, World!".
 
 # Command Prompt Commands
 *The following all work when using commands: ghostscript, ghost, gst.*\
-`init` - Creates a new GhostScript project at the current directory.
-`install` - Installs a GhostScript module onto your system.
-`run` - Executes a GhostScript file.
-`snapshot` - Creates a new text file with the contents of the file path provided with the filename and ISO string as the name.
-`upd` - Updates the GhostScript package.
+`init` - Creates a new GhostScript project at the current directory.\
+`install` - Installs a GhostScript module onto your system.\
+`run` - Executes a GhostScript file.\
+`snapshot` - Creates a new text file with the contents of the file path provided with the filename and ISO string as the name.\
+`upd` - Updates the GhostScript package.\
 `version` - Prints out the version of the installed GhostScript package.
 
 # Changelog
