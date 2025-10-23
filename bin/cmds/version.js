@@ -1,0 +1,11 @@
+const child_process = require("child_process");
+
+function version(args) {
+    child_process.exec(`npm ls ghostscript`, (err, stdout, stderr) => {
+        if(err) return console.error(`exec error: ${err}`);
+        if(stderr.length) console.error(stderr);
+        else console.log(stdout);
+    });
+}
+
+module.exports = { default: version };
