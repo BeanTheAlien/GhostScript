@@ -130,57 +130,91 @@ function tokenize(script) {
     return tokens;
 }
 async function parser(tokens) {
-    for(let i = 0; i < tokens.length; i++) {
-        const { id, val } = tokens[i];
-        if(id == "unknown") throw new Error(`Unknown token with value '${val}'.`);
-        if(id == "keyword") {
-            if(val == "import" && tokens[i+1].id == "id") {
-                const modName = tokens[i+1].val;
-                const lib = await getModule(modName, modName);
-                if (!lib) {
-                    console.error(`Could not load module ${modName}`);
-                    break;
-                }
-
-                // always keep module object available
-                runtime.modules[modName] = lib;
-
-                // if reqroot is false, inject exported names into runtime.scope
-                if (lib.meta && lib.meta.reqroot == false) {
-                    for (const [k, v] of Object.entries(lib.exports)) {
-                        // avoid clobbering existing names unless you want to
-                        if (runtime.scope[k]) {
-                            console.warn(`Skipping import of '${k}' from ${modName}: name conflict in global scope`);
-                            continue;
-                        }
-                        runtime.scope[k] = v;
+    let i = 0;
+    while(i < tokens.length) {
+        const tk = tokens[i];
+        if(tk.id == "keyword" && tk.val == "import") {
+            const modName = tokens[i+1].val;
+            const lib = await getModule(modName, modName);
+            if(!lib) {
+                console.error(`Could not load module ${modName}`);
+                break;
+            }
+            // always keep module object available
+            runtime.modules[modName] = lib;
+            // if reqroot is false, inject exported names into runtime.scope
+            if(lib.meta && lib.meta.reqroot == false) {
+                for(const [k, v] of Object.entries(lib.exports)) {
+                    // avoid clobbering existing names unless you want to
+                    if(runtime.scope[k]) {
+                        console.warn(`Skipping import of '${k}' from ${modName}: name conflict in global scope`);
+                        continue;
                     }
-                } else {
-                    // else expose under default root name
-                    const rootName = lib.meta.defroot || modName;
-                    runtime.scope[rootName] = lib.exports;
+                    runtime.scope[k] = v;
                 }
+            } else {
+                // else expose under default root name
+                const rootName = lib.meta.defroot || modName;
+                runtime.scope[rootName] = lib.exports;
             }
+            i += 2;
+            continue;
         }
-        if(id == "id") {
-            if(tokens[i+1] && tokens[i+1].id == "lparen") {
-                const funcName = val;
-                const args = parseFunc(tokens, i);
-                i = args.nextI;
-                const func = findFunction(funcName);
-                runFunc(func, ...args.args);
-            }
-            else if(tokens[i+1] && tokens[i+1].id == "period" && tokens[i+3].id == "lparen") {
-                const methodTarget = val;
-                const methodName = tokens[i+2].val;
-                i += 2;
-                const args = parseFunc(tokens, i);
-                i = args.nextI;
-                const method = findMethod(id, methodName);
-                runMethod(method, methodTarget, ...args.args);
-            }
-        }
+        const expr = parseExpr(tokens, i);
+        i = expr.next;
+        interpret(expr.node);
     }
+    // for(let i = 0; i < tokens.length; i++) {
+    //     const { id, val } = tokens[i];
+    //     if(id == "unknown") throw new Error(`Unknown token with value '${val}'.`);
+    //     if(id == "keyword") {
+    //         if(val == "import" && tokens[i+1].id == "id") {
+    //             const modName = tokens[i+1].val;
+    //             const lib = await getModule(modName, modName);
+    //             if (!lib) {
+    //                 console.error(`Could not load module ${modName}`);
+    //                 break;
+    //             }
+
+    //             // always keep module object available
+    //             runtime.modules[modName] = lib;
+
+    //             // if reqroot is false, inject exported names into runtime.scope
+    //             if (lib.meta && lib.meta.reqroot == false) {
+    //                 for (const [k, v] of Object.entries(lib.exports)) {
+    //                     // avoid clobbering existing names unless you want to
+    //                     if (runtime.scope[k]) {
+    //                         console.warn(`Skipping import of '${k}' from ${modName}: name conflict in global scope`);
+    //                         continue;
+    //                     }
+    //                     runtime.scope[k] = v;
+    //                 }
+    //             } else {
+    //                 // else expose under default root name
+    //                 const rootName = lib.meta.defroot || modName;
+    //                 runtime.scope[rootName] = lib.exports;
+    //             }
+    //         }
+    //     }
+    //     if(id == "id") {
+    //         if(tokens[i+1] && tokens[i+1].id == "lparen") {
+    //             const funcName = val;
+    //             const args = parseFunc(tokens, i);
+    //             i = args.nextI;
+    //             const func = findFunction(funcName);
+    //             runFunc(func, ...args.args);
+    //         }
+    //         else if(tokens[i+1] && tokens[i+1].id == "period" && tokens[i+3] && tokens[i+3].id == "lparen") {
+    //             const methodTarget = val;
+    //             const methodName = tokens[i+2].val;
+    //             i += 2;
+    //             const args = parseFunc(tokens, i);
+    //             i = args.nextI;
+    //             const method = findMethod(id, methodName);
+    //             runMethod(method, methodTarget, ...args.args);
+    //         }
+    //     }
+    // }
 }
 function parseFunc(tokens, i) {
     i += 2;
@@ -209,6 +243,54 @@ function parseFunc(tokens, i) {
         nextI: i
     };
 }
+function parseExpr(tokens, i) {
+    let node = parsePrim(tokens, i);
+    let next = tokens[node.next];
+    while(next && (next.id == "period" || next.id == "lparen")) {
+        if(next.id == "period") {
+            const prop = tokens[node.next + 1];
+            node = {
+                type: "MemberExpression",
+                object: node.node,
+                property: { id: "Identifier", val: prop.val }
+            };
+            node.next = node.next + 2;
+        } else if(next.id == "lparen") {
+            const args = parseArguments(tokens, node.next + 1);
+            node = {
+                type: "CallExpression",
+                callee: node.node,
+                args: args.args
+            };
+            node.next = args.next;
+        }
+        next = tokens[node.next];
+    }
+    return node;
+}
+function parsePrim(tokens, i) {
+    const token = tokens[i];
+    if(token.id == "id") return { node: { id: "Identifier", val: token.val }, next: i + 1 };
+    if(token.id == "string") return { node: { id: "Literal", val: token.val }, next: i + 1 };
+    if(token.id == "lparen") {
+        const expr = parseExpr(tokens, i + 1);
+        if(tokens[expr.next].type != "rparen") throw new Error("Expected ')'.");
+        return { node: expr.node, next: expr.next + 1 };
+    }
+    throw new Error(`Unexpected token '${token.val}'.`);
+}
+function parseArguments(tokens, i) {
+    const args = [];
+    while(i < tokens.length && tokens[i].id != "rparen") {
+        const expr = parseExpr(tokens, i);
+        args.push(expr.node);
+        i = expr.next;
+        if(tokens[i].id && tokens[i].id == "comma") i++;
+    }
+    if(tokens[i].id == "rparen") throw new Error("Expected ')'.");
+    return { args, next: i + 1 };
+}
+function interpret(node) {}
 
 async function compile(tokens) {
     for (const { name, match } of tokens) {
