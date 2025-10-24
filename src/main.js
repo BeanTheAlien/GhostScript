@@ -15,7 +15,6 @@ async function main() {
     //const tokens = await lexer(grammar, script);
     //await compile(tokens);
     await parser(tokenize(script));
-    console.log("ghost" in runtime.modules);
 }
 main();
 
@@ -247,37 +246,36 @@ function parseFunc(tokens, i) {
     };
 }
 function parseExpr(tokens, i) {
-    let node = parsePrim(tokens, i);
-    let next = tokens[node.next];
-    while(next && (next.id == "dot" || next.id == "lparen")) {
-        if(next.id == "dot") {
-            const prop = tokens[node.next + 1];
+    let { node, next } = parsePrim(tokens, i);
+    while(tokens[next] && (tokens[next].id == "dot" || tokens[next].id == "lparen")) {
+        const tk = tokens[next];
+        if(tk.id == "dot") {
+            const prop = tokens[next + 1];
             node = {
                 type: "MemberExpression",
-                object: node.node,
-                property: { id: "Identifier", val: prop.val }
+                object: node,
+                prop: { type: "Identifier", val: prop.val }
             };
-            node.next = node.next + 2;
-        } else if(next.id == "lparen") {
-            const args = parseArguments(tokens, node.next + 1);
+            next += 2;
+        } else if(tk.id == "lparen") {
+            const args = parseArguments(tokens, next + 1);
             node = {
                 type: "CallExpression",
-                callee: node.node,
+                callee: node,
                 args: args.args
             };
-            node.next = args.next;
+            next = args.next;
         }
-        next = tokens[node.next];
     }
-    return node;
+    return { node, next };
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
-    if(token.id == "id") return { node: { id: "Identifier", val: token.val }, next: i + 1 };
-    if(token.id == "string") return { node: { id: "Literal", val: token.val }, next: i + 1 };
+    if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
+    if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "lparen") {
         const expr = parseExpr(tokens, i + 1);
-        if(tokens[expr.next].type != "rparen") throw new Error("Expected ')'.");
+        if(tokens[expr.next].id != "rparen") throw new Error("Expected ')'.");
         return { node: expr.node, next: expr.next + 1 };
     }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
@@ -290,27 +288,95 @@ function parseArguments(tokens, i) {
         i = expr.next;
         if(tokens[i]?.id == "comma") i++;
     }
-    if(tokens[i]?.id == "rparen") throw new Error("Expected ')'.");
+    if(tokens[i]?.id != "rparen") throw new Error("Expected ')'.");
     return { args, next: i + 1 };
 }
 function interp(node) {
-    switch(node.id) {
+    // safety: print debugging for malformed nodes
+    if (!node || typeof node !== "object") {
+        console.error("interp got a non-node:", node);
+        throw new Error("interp received invalid AST node");
+    }
+
+    switch (node.type) {
         case "Literal":
             return node.val;
+
         case "Identifier":
-            return runtime.scope[node.val] ?? node.val;
-        case "MemberExpression":
+            // return actual runtime binding if present, otherwise the name (so callers can decide)
+            return runtime.scope[node.val] !== undefined ? runtime.scope[node.val] : node.val;
+
+        case "MemberExpression": {
+            // Evaluate left side (the object)
             const obj = interp(node.object);
-            return obj[node.prop.val];
-        case "CallExpression":
-            const callee = interp(node.callee);
+            // property node is usually { type: 'Identifier', val: 'propName' }
+            const propName = (node.prop && (node.prop.val || node.prop.name)) || (node.property && (node.property.val || node.property.name));
+            if (obj == null) {
+                console.error("MemberExpression: target is null/undefined", node);
+                throw new Error("Cannot access property of null/undefined");
+            }
+            // normal JS property access
+            return obj[propName];
+        }
+
+        case "CallExpression": {
+            // If callee is a MemberExpression, handle as method/JS-method
+            if (node.callee.type === "MemberExpression") {
+                // evaluate object (target) first
+                const targetValue = interp(node.callee.object);
+                // get property name
+                const methodName = (node.callee.prop && node.callee.prop.val) || (node.callee.property && node.callee.property.val);
+                const args = node.args.map(a => interp(a));
+
+                // First try Ghost method (GSMethod lookup)
+                const gsMethod = findMethod(targetValue, methodName);
+                if (gsMethod) {
+                    return runMethod(gsMethod, targetValue, ...args);
+                }
+
+                // Fallback: JS property on object, call it with correct this
+                const maybeFn = targetValue && targetValue[methodName];
+                if (typeof maybeFn === "function") {
+                    return maybeFn.apply(targetValue, args);
+                }
+
+                console.error("CallExpression: method not found:", methodName, "on", targetValue, "node:", node);
+                throw new Error(`Method '${methodName}' not found on target`);
+            }
+
+            // Otherwise callee is not a member expression (e.g. Identifier or nested CallExpression)
+            // Evaluate callee to a value
+            const calleeVal = interp(node.callee);
             const args = node.args.map(a => interp(a));
-            // func or method
-            if(typeof callee == "function") return callee(...args);
-            if(callee.gsFuncBody) return runFunc(callee, ...args);
-            if(callee.gsMethodBody) return runMethod(callee, obj, ...args);
-            throw new Error(`Cannot call '${callee}'.`);
+
+            // If calleeVal is a plain JS function, call it
+            if (typeof calleeVal === "function") {
+                return calleeVal(...args);
+            }
+
+            // If calleeVal looks like a GSFunc (has gsFuncBody), use runFunc
+            if (calleeVal && calleeVal.gsFuncBody) {
+                return runFunc(calleeVal, ...args);
+            }
+
+            // If callee is a name (string) try to resolve from runtime.scope or modules (defensive)
+            if (typeof calleeVal === "string") {
+                // try to find a GS function by that name
+                const fn = findFunction(calleeVal);
+                if (fn) return runFunc(fn, ...args);
+
+                // try JS global in runtime.scope
+                if (runtime.scope && runtime.scope[calleeVal] && typeof runtime.scope[calleeVal] === "function") {
+                    return runtime.scope[calleeVal](...args);
+                }
+            }
+
+            console.error("CallExpression: cannot call calleeVal:", calleeVal, "node:", node);
+            throw new Error(`Cannot call '${String(calleeVal)}'`);
+        }
+
         default:
+            console.error("interp: unknown node:", node);
             throw new Error(`Unknown node with type '${node.type}'.`);
     }
 }
