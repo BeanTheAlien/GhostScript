@@ -16,7 +16,7 @@ Use the same name for a variable, function and method? Fine. Add spaces or symbo
 Ghost is alive and evolving - its creator, [@BeanTheAlien](https://github.com/BeanTheAlien), keeps pushing updates that expand what a scripting language can do.\
 Got a project? Try GhostScript and see how much simpler coding can feel.
 
-# Version 0.0.5
+# Version 0.0.6
 
 <!--# Downloads
 ## Stable-->
@@ -101,6 +101,8 @@ Try running your script - you should see "Hello, World!".
 ## 0.0.5
 - Updated src/main to add method support and fixed errors.
 - Updated src/main to work on the parser to support funcs. Started working on method support.
+## 0.0.6
+- Got src/main finally working. Supports very primitive scripts.
 
 # Roadmap
-- More comprehensive lexer/compiler. (v0.0.6)
+~~~- More comprehensive lexer/compiler. (v0.0.6)~~~
