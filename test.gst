@@ -2,4 +2,4 @@ import ghost
 // var e = 42
 // println("Hello World", 123)
 // print(123)
-print("hello world".toUpper())
+print("HELLO WORLD".toLower())

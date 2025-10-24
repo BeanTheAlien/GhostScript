@@ -478,8 +478,8 @@ async function getModule(name, subname) {
     const js = await getRemoteModule(url);
     const module = { exports: {} };
     try {
-        const wrapped = new Function("module", "exports", js);
-        wrapped(module, module.exports);
+        const wrapped = new Function("module", "exports", "require", js);
+        wrapped(module, module.exports, require);
     } catch (err) {
         console.error(`Failed to execute module ${name}:`, err);
         return null;
