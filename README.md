@@ -105,4 +105,4 @@ Try running your script - you should see "Hello, World!".
 - Got src/main finally working. Supports very primitive scripts.
 
 # Roadmap
-~~~- More comprehensive lexer/compiler. (v0.0.6)~~~
+~~- More comprehensive lexer/compiler. (v0.0.6)~~
