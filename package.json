@@ -9,7 +9,8 @@
   "bin": {
     "ghostscript": "./bin/bin.js",
     "ghost": "./bin/bin.js",
-    "gst": "./bin/bin.js"
+    "gst": "./bin/bin.js",
+    "gs": "./bin/bin.js"
   },
   "repository": {
     "type": "git",
