@@ -18,9 +18,9 @@ Got a project? Try GhostScript and see how much simpler coding can feel.
 
 # Version 0.0.6
 
-<!--# Downloads
-## Stable-->
-<!--ghostscript - <a href="" download>download</a>-->
+# Downloads
+## Stable
+ghostscript@v0.0.6 - <a href="https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.6">download</a>
 
 <!--## Unstable-->
 <!--ghostscript - <a href="" download>download</a>-->
