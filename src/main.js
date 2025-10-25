@@ -16,7 +16,7 @@ async function main() {
     //await compile(tokens);
     await parser(tokenize(script));
 }
-main();
+main().catch(e => console.log(e));
 
 async function lexer(grammar, script) {
     const tokens = [];
@@ -285,13 +285,13 @@ function parsePrim(tokens, i) {
     }
     if(token.id == "keyword" && token.val == "var" && tokens[i+1] && tokens[i+1].id == "id") {
         const name = tokens[i+1].val;
-        if(tokens[i+2]) {
-            if(tokens[i+2].id != "eqls") throw new Error("Expected '='.");
-            if(!tokens[i+3]) throw new Error(`Missing assignment value of '${name}'.`);
+        if(tokens[i+2] && tokens[i+2].id == "eqls") {
+            //if(tokens[i+2].id != "eqls") throw new Error("Expected '='.");
+            //if(!tokens[i+3]) throw new Error(`Missing assignment value of '${name}'.`);
             const val = tokens[i+3];
             return { node: { type: "Assignment", val: [name, val] }, next: i + 4 };
         }
-        return { node: { type: "Declaration", val: name }, next: i + 1 };
+        return { node: { type: "Declaration", val: name }, next: i + 2 };
     }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
@@ -394,7 +394,9 @@ function interp(node) {
             runtime.scope[node.val] = undefined;
             break;
         case "Assignment":
-            runtime.scope[node.val[0]] = node.val[1].val;
+            const nm = node.val[0];
+            const vl = node.val[1];
+            runtime.scope[nm] = vl.val;
             break;
 
         default:

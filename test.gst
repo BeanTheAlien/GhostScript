@@ -1,3 +1,3 @@
 import ghost
-var hello = "Hello, World!"
+var hello
 print(hello)
