@@ -102,8 +102,13 @@ function tokenize(script) {
         }
 
         // single-char operators
-        if("+-*/%<>=".includes(char)) {
+        if("+-*/%<>".includes(char)) {
             tokens.push({ id: "opr", val: char });
+            i++;
+            continue;
+        }
+        if(char == "=") {
+            tokens.push({ id: "eqls", val: char });
             i++;
             continue;
         }
