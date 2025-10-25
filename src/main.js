@@ -283,6 +283,16 @@ function parsePrim(tokens, i) {
         if(tokens[expr.next].id != "rparen") throw new Error("Expected ')'.");
         return { node: expr.node, next: expr.next + 1 };
     }
+    if(token.id == "keyword" && token.val == "var" && tokens[i+1] && tokens[i+1].id == "id") {
+        const name = tokens[i+1].val;
+        if(tokens[i+2]) {
+            if(tokens[i+2].id != "eqls") throw new Error("Expected '='.");
+            if(!tokens[i+3]) throw new Error(`Missing assignment value of '${name}'.`);
+            const val = tokens[i+3];
+            return { node: { type: "Assignment", val: [name, val] }, next: i + 4 };
+        }
+        return { node: { type: "Declaration", val: name }, next: i + 1 };
+    }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
 function parseArguments(tokens, i) {
@@ -309,7 +319,8 @@ function interp(node) {
 
         case "Identifier":
             // return actual runtime binding if present, otherwise the name (so callers can decide)
-            return runtime.scope[node.val] !== undefined ? runtime.scope[node.val] : node.val;
+            if(Object.hasOwn(runtime.scope, node.val)) return runtime.scope[node.val];
+            return node.val;
 
         case "MemberExpression": {
             // Evaluate left side (the object)
@@ -379,6 +390,12 @@ function interp(node) {
             console.error("CallExpression: cannot call calleeVal:", calleeVal, "node:", node);
             throw new Error(`Cannot call '${String(calleeVal)}'`);
         }
+        case "Declaration":
+            runtime.scope[node.val] = undefined;
+            break;
+        case "Assignment":
+            runtime.scope[node.val[0]] = node.val[1].val;
+            break;
 
         default:
             console.error("interp: unknown node:", node);
