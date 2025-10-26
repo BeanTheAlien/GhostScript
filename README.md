@@ -25,12 +25,11 @@ ghostscript@v0.0.6 - <a href="https://github.com/BeanTheAlien/GhostScript/releas
 <!--## Unstable-->
 <!--ghostscript - <a href="" download>download</a>-->
 
-<!--# Install-->
-<!--Install with npm:
+# Install
 ```
-npm install ghostscript
+npm install @beanthealien/ghostscript
 ```
-
+<!--
 Install by download:
 1. Go to the downloads section.
 2. Download the version you want. (suggested stable@recent)
