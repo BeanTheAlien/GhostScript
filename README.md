@@ -103,7 +103,8 @@ Try running your script - you should see "Hello, World!".
 ## 0.0.6
 - Got src/main finally working. Supports very primitive scripts.
 ## 0.0.7
-- Added variable support (define with `var`)
+- Added variable support (define with `var`).
+- Fixed an error in the stdlib that would cause undefined to not print.
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~
