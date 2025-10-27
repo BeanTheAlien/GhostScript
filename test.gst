@@ -1,3 +1,3 @@
 import ghost
-var hello
+var hello = 123
 print(hello)

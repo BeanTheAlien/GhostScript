@@ -130,6 +130,20 @@ function tokenize(script) {
             continue;
         }
 
+        if(char == "[" || char == "]") {
+            const type = char == "[" ? "lbracket" : "rbracket";
+            tokens.push({ id: type, val: char });
+            i++;
+            continue;
+        }
+
+        if(char == "{" || char == "}") {
+            const type = char == "{" ? "lbrace" : "rbrace";
+            tokens.push({ id: type, val: char });
+            i++;
+            continue;
+        }
+
         // if we reach here, it's unknown
         tokens.push({ id: "unknown", val: char });
         i++;
@@ -274,6 +288,36 @@ function parseExpr(tokens, i) {
     }
     return { node, next };
 }
+function parseArr(tokens, i) {
+    let idx = i + 1;
+    let els = [];
+    if(tokens[idx] && tokens[idx].id == "rbracket") {
+        return { node: { type: "ArrayExpression", elements: els } };
+    }
+    while(idx < tokens.length) {
+        const expr = parseExpr(tokens, idx);
+        els.push(expr.node);
+        idx = expr.next;
+        // if next token is comma, consume and continue
+        if(tokens[idx] && tokens[idx].id === "comma") {
+            idx++;
+            // handle trailing comma before closing bracket gracefully
+            if(tokens[idx] && tokens[idx].id === "rbracket") {
+                return { node: { type: "ArrayExpression", elements }, next: idx + 1 };
+            }
+            continue;
+        }
+
+        // if rbracket found, finish
+        if(tokens[idx] && tokens[idx].id === "rbracket") {
+            return { node: { type: "ArrayExpression", elements }, next: idx + 1 };
+        }
+
+        // otherwise it's an error
+        throw new Error("Expected ',' or ']' in array literal");
+    }
+    throw new Error("Unterminated array literal (missing ']')");
+}
 function parsePrim(tokens, i) {
     const token = tokens[i];
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
@@ -292,6 +336,10 @@ function parsePrim(tokens, i) {
             return { node: { type: "Assignment", val: [name, val] }, next: i + 4 };
         }
         return { node: { type: "Declaration", val: name }, next: i + 2 };
+    }
+    if(token.id == "lbracket") {
+        const arr = parseArr(tokens, i);
+        return { node: arr.node, next: arr.next };
     }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
