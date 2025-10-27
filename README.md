@@ -20,8 +20,8 @@ Got a project? Try GhostScript and see how much simpler coding can feel.
 
 # Downloads
 ## Stable
-ghostscript@v0.0.7 - [download]("https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.7")\
-ghostscript@v0.0.6 - [download]("https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.6")
+ghostscript@v0.0.7 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.7)
+ghostscript@v0.0.6 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.6)
 
 <!--## Unstable-->
 <!--ghostscript - <a href="" download>download</a>-->
