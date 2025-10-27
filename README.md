@@ -82,7 +82,7 @@ Try running your script - you should see "Hello, World!".
 <a href="https://docs.google.com/document/d/1v5lAGBtDkGrv2eEFVrlzB9dqm6KoyQWsBLZ5BTpgsb0/edit?usp=sharing">GhostScript docs</a>
 
 # Command Prompt Commands
-*The following all work when using commands: ghostscript, ghost, gst.*\
+*The following all work when using commands: ghostscript, ghost, gst, gs.*\
 `init` - Creates a new GhostScript project at the current directory.\
 `install` - Installs a GhostScript module onto your system.\
 `run` - Executes a GhostScript file.\
