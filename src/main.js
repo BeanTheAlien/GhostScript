@@ -14,7 +14,8 @@ async function main() {
     const script = fs.readFileSync(`${file}.gst`, "utf8");
     //const tokens = await lexer(grammar, script);
     //await compile(tokens);
-    await parser(tokenize(script));
+    const tokens = tokenize(script);
+    await parser(tokens);
 }
 main().catch(e => console.log(e));
 
@@ -185,57 +186,6 @@ async function parser(tokens) {
         i = expr.next;
         interp(expr.node);
     }
-    // for(let i = 0; i < tokens.length; i++) {
-    //     const { id, val } = tokens[i];
-    //     if(id == "unknown") throw new Error(`Unknown token with value '${val}'.`);
-    //     if(id == "keyword") {
-    //         if(val == "import" && tokens[i+1].id == "id") {
-    //             const modName = tokens[i+1].val;
-    //             const lib = await getModule(modName, modName);
-    //             if (!lib) {
-    //                 console.error(`Could not load module ${modName}`);
-    //                 break;
-    //             }
-
-    //             // always keep module object available
-    //             runtime.modules[modName] = lib;
-
-    //             // if reqroot is false, inject exported names into runtime.scope
-    //             if (lib.meta && lib.meta.reqroot == false) {
-    //                 for (const [k, v] of Object.entries(lib.exports)) {
-    //                     // avoid clobbering existing names unless you want to
-    //                     if (runtime.scope[k]) {
-    //                         console.warn(`Skipping import of '${k}' from ${modName}: name conflict in global scope`);
-    //                         continue;
-    //                     }
-    //                     runtime.scope[k] = v;
-    //                 }
-    //             } else {
-    //                 // else expose under default root name
-    //                 const rootName = lib.meta.defroot || modName;
-    //                 runtime.scope[rootName] = lib.exports;
-    //             }
-    //         }
-    //     }
-    //     if(id == "id") {
-    //         if(tokens[i+1] && tokens[i+1].id == "lparen") {
-    //             const funcName = val;
-    //             const args = parseFunc(tokens, i);
-    //             i = args.nextI;
-    //             const func = findFunction(funcName);
-    //             runFunc(func, ...args.args);
-    //         }
-    //         else if(tokens[i+1] && tokens[i+1].id == "dot" && tokens[i+3] && tokens[i+3].id == "lparen") {
-    //             const methodTarget = val;
-    //             const methodName = tokens[i+2].val;
-    //             i += 2;
-    //             const args = parseFunc(tokens, i);
-    //             i = args.nextI;
-    //             const method = findMethod(id, methodName);
-    //             runMethod(method, methodTarget, ...args.args);
-    //         }
-    //     }
-    // }
 }
 function parseFunc(tokens, i) {
     i += 2;
@@ -296,27 +246,28 @@ function parseArr(tokens, i) {
     }
     while(idx < tokens.length) {
         const expr = parseExpr(tokens, idx);
+        console.log(expr);
         els.push(expr.node);
         idx = expr.next;
         // if next token is comma, consume and continue
-        if(tokens[idx] && tokens[idx].id === "comma") {
+        if(tokens[idx] && tokens[idx].id == "comma") {
             idx++;
             // handle trailing comma before closing bracket gracefully
-            if(tokens[idx] && tokens[idx].id === "rbracket") {
+            if(tokens[idx] && tokens[idx].id == "rbracket") {
                 return { node: { type: "ArrayExpression", elements }, next: idx + 1 };
             }
             continue;
         }
 
         // if rbracket found, finish
-        if(tokens[idx] && tokens[idx].id === "rbracket") {
+        if(tokens[idx] && tokens[idx].id == "rbracket") {
             return { node: { type: "ArrayExpression", elements }, next: idx + 1 };
         }
 
         // otherwise it's an error
-        throw new Error("Expected ',' or ']' in array literal");
+        throw new Error("Expected ',' or ']' in array literal.");
     }
-    throw new Error("Unterminated array literal (missing ']')");
+    throw new Error("Unterminated array literal (missing ']').");
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
@@ -385,7 +336,7 @@ function interp(node) {
 
         case "CallExpression": {
             // If callee is a MemberExpression, handle as method/JS-method
-            if (node.callee.type === "MemberExpression") {
+            if(node.callee.type == "MemberExpression") {
                 // evaluate object (target) first
                 const targetValue = interp(node.callee.object);
                 // get property name
@@ -394,13 +345,13 @@ function interp(node) {
 
                 // First try Ghost method (GSMethod lookup)
                 const gsMethod = findMethod(targetValue, methodName);
-                if (gsMethod) {
+                if(gsMethod) {
                     return runMethod(gsMethod, targetValue, ...args);
                 }
 
                 // Fallback: JS property on object, call it with correct this
                 const maybeFn = targetValue && targetValue[methodName];
-                if (typeof maybeFn === "function") {
+                if(typeof maybeFn == "function") {
                     return maybeFn.apply(targetValue, args);
                 }
 
@@ -414,23 +365,23 @@ function interp(node) {
             const args = node.args.map(a => interp(a));
 
             // If calleeVal is a plain JS function, call it
-            if (typeof calleeVal === "function") {
+            if(typeof calleeVal == "function") {
                 return calleeVal(...args);
             }
 
             // If calleeVal looks like a GSFunc (has gsFuncBody), use runFunc
-            if (calleeVal && calleeVal.gsFuncBody) {
+            if(calleeVal && calleeVal.gsFuncBody) {
                 return runFunc(calleeVal, ...args);
             }
 
             // If callee is a name (string) try to resolve from runtime.scope or modules (defensive)
-            if (typeof calleeVal === "string") {
+            if(typeof calleeVal == "string") {
                 // try to find a GS function by that name
                 const fn = findFunction(calleeVal);
-                if (fn) return runFunc(fn, ...args);
+                if(fn) return runFunc(fn, ...args);
 
                 // try JS global in runtime.scope
-                if (runtime.scope && runtime.scope[calleeVal] && typeof runtime.scope[calleeVal] === "function") {
+                if(runtime.scope && runtime.scope[calleeVal] && typeof runtime.scope[calleeVal] == "function") {
                     return runtime.scope[calleeVal](...args);
                 }
             }
