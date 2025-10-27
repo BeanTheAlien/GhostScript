@@ -105,6 +105,7 @@ Try running your script - you should see "Hello, World!".
 ## 0.0.7
 - Added variable support (define with `var`).
 - Fixed an error in the stdlib that would cause undefined to not print.
+- Fixed an error in the stdlib that would cause null and undefined to not be different values.
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~
