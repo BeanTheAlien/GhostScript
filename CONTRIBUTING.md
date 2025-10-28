@@ -32,4 +32,6 @@ Note: Files should utilize the `GhostScript Module Development API`. Check the R
 # Updating GhostScript
 If you have an update that would benefit GhostScript, than feel free to contribute.\
 When you make an edit, ensure that your commit message is understandable to other devs and update the README accordingly.\
-Before pushing origin, always ensure that your update works as intended.
+Before pushing origin, always ensure that your update works as intended.\
+For larger changes, please make a pull request that can bes tested before implementing.\
+If you are fixing an error, consider creating an issue (if one does not already exist).
