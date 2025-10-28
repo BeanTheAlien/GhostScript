@@ -28,3 +28,8 @@ When all these steps are completed, create a pull request with your module.\
 Your module will be reviewed and either accepted or denied whenever I have time to review it.\
 If your module is denied, please review comments on why it was denied.\
 Note: Files should utilize the `GhostScript Module Development API`. Check the README for a link.
+
+# Updating GhostScript
+If you have an update that would benefit GhostScript, than feel free to contribute.\
+When you make an edit, ensure that your commit message is understandable to other devs and update the README accordingly.\
+Before pushing origin, always ensure that your update works as intended.
