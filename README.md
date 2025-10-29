@@ -3,7 +3,7 @@ This is the home of the GhostScript language!
 
 # About
 GhostScript is a free, open-source programming language designed to simplify your scripting experience and handle the hard parts for you.\
-Ghost offers an expansive preproccessor system to deal with dependencies before the script is executed.\
+Ghost offers an expansive preprocessor system to deal with dependencies before the script is executed.\
 Ghost also includes the Autodebugger API, Context Awareness API and Ghost Assistant API.\
 The Autodebugger API is AI-powered to analyze your script to solve errors and include documentation.\
 The Context Awareness API tries to figure out "what you meant".\
