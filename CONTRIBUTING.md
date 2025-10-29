@@ -14,7 +14,7 @@ The syntax for the `ghostmodule` object is:
 ```
 const ghostmodule = {
     name: "the name of my module file",
-    desc: "description of my module file.",
+    desc: "description of my module file",
     version: "major.minor.patch",
     author: "module file author",
     root: "root file",
