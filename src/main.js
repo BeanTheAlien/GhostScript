@@ -157,8 +157,6 @@ async function parser(tokens) {
         const tk = tokens[i];
         if(tk.id == "keyword" && tk.val == "import") {
             const modName = tokens[i+1].val;
-            let lib;
-            if(tokens[i+2].id == "dot") lib = await getModule(modName, tokens[i+3].val);
             else lib = await getModule(modName, modName);
             if(!lib) {
                 console.error(`Could not load module ${modName}`);
