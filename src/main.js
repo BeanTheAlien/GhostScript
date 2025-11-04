@@ -157,7 +157,9 @@ async function parser(tokens) {
         const tk = tokens[i];
         if(tk.id == "keyword" && tk.val == "import") {
             const modName = tokens[i+1].val;
-            const lib = await getModule(modName, modName);
+            let lib;
+            if(tokens[i+2].id == "dot") lib = await getModule(modName, tokens[i+3].val);
+            else lib = await getModule(modName, modName);
             if(!lib) {
                 console.error(`Could not load module ${modName}`);
                 break;
@@ -254,14 +256,14 @@ function parseArr(tokens, i) {
             idx++;
             // handle trailing comma before closing bracket gracefully
             if(tokens[idx] && tokens[idx].id == "rbracket") {
-                return { node: { type: "ArrayExpression", elements }, next: idx + 1 };
+                return { node: { type: "ArrayExpression", elements: els }, next: idx + 1 };
             }
             continue;
         }
 
         // if rbracket found, finish
         if(tokens[idx] && tokens[idx].id == "rbracket") {
-            return { node: { type: "ArrayExpression", elements }, next: idx + 1 };
+            return { node: { type: "ArrayExpression", elements: els }, next: idx + 1 };
         }
 
         // otherwise it's an error
