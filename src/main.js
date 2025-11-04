@@ -157,7 +157,7 @@ async function parser(tokens) {
         const tk = tokens[i];
         if(tk.id == "keyword" && tk.val == "import") {
             const modName = tokens[i+1].val;
-            else lib = await getModule(modName, modName);
+            const lib = await getModule(modName, modName);
             if(!lib) {
                 console.error(`Could not load module ${modName}`);
                 break;
@@ -495,18 +495,30 @@ async function getRemoteModule(url) {
         }).on("error", reject);
     });
 }
-
+function createRemoteRequire(baseURL) {
+  return async function(relPath) {
+    const resolvedURL = new URL(relPath, baseURL).href;
+    const code = await fetch(resolvedURL).then(r => r.text());
+    const module = { exports: {} };
+    const wrapped = new Function("module", "exports", "require", code);
+    await wrapped(module, module.exports, createRemoteRequire(resolvedURL));
+    return module.exports;
+  };
+}
 async function getModule(name, subname) {
     const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/refs/heads/main/ghost/modules/${name}/${subname}.js`;
-    const js = await getRemoteModule(url);
+    const dir = url.split("/").slice(0, -1).join("/");
+    const js = await (await fetch(url)).text();
     const module = { exports: {} };
-    try {
-        const wrapped = new Function("module", "exports", "require", js);
-        wrapped(module, module.exports, require);
-    } catch (err) {
-        console.error(`Failed to execute module ${name}:`, err);
-        return null;
-    }
+    const wrapped = new Function("module", "exports", "require", js);
+    await wrapped(module, module.exports, createRemoteRequire(dir + "/"));
+    // try {
+    //     const wrapped = new Function("module", "exports", "require", js);
+    //     wrapped(module, module.exports, require);
+    // } catch (err) {
+    //     console.error(`Failed to execute module ${name}:`, err);
+    //     return null;
+    // }
     const m = module.exports || {};
 
     // Build "flat" exports object that runtime expects.
