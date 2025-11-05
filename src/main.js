@@ -242,10 +242,10 @@ function parseArr(tokens, i) {
     let idx = i + 1;
     let els = [];
     if(tokens[idx] && tokens[idx].id == "rbracket") {
-        return { node: { type: "ArrayExpression", elements: els } };
+        return { node: { type: "ArrayExpression", val: els }, next: idx + 1 };
     }
     while(idx < tokens.length) {
-        const expr = parseExpr(tokens, idx);
+        const expr = parsePrim(tokens, idx);
         console.log(expr);
         els.push(expr.node);
         idx = expr.next;
@@ -254,14 +254,14 @@ function parseArr(tokens, i) {
             idx++;
             // handle trailing comma before closing bracket gracefully
             if(tokens[idx] && tokens[idx].id == "rbracket") {
-                return { node: { type: "ArrayExpression", elements: els }, next: idx + 1 };
+                return { node: { type: "ArrayExpression", val: els }, next: idx + 1 };
             }
             continue;
         }
 
         // if rbracket found, finish
         if(tokens[idx] && tokens[idx].id == "rbracket") {
-            return { node: { type: "ArrayExpression", elements: els }, next: idx + 1 };
+            return { node: { type: "ArrayExpression", val: els }, next: idx + 1 };
         }
 
         // otherwise it's an error
