@@ -1,48 +1,69 @@
 const fs = require("fs");
-const readline = require("readline");
 const path = require("path");
 const cp = require("child_process");
 
-const grnsqr = String.fromCharCode(0x1F7E9);
+const grnsqr = "🟩";
+const empty = "⬛";
 
-function WritePATH() {
-    console.log("Creating PATH backup file...");
-    cp.exec("echo %PATH% > path_backup.txt", (err, stdout, stderr) => {
-        if(err) throw err;
-    });
-    console.log("Writing to PATH...");
-    cp.exec(`setx PATH "%PATH%;C:\\Program Files\\GhostScript"
-    setx PATHEXE "%PATHEXE;.gst"
-    assoc .gst=ghostscript
-    ftype ghostscript="C:\\Program Files\\GhostScript\\GhostScript.exe" "%1"
-    reg add "HKEY_CLASSES_ROOT\\ghostscript" /ve /d "GhostScript" /f`, (err, stderr, stdout) => {
-        if(err) throw err;
-    });
-    writeFiles();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function progress(label, steps = 20, delay = 100) {
+    process.stdout.write(`${label}\n[${empty.repeat(steps)}]`);
+    for (let i = 1; i <= steps; i++) {
+        await sleep(delay);
+        process.stdout.cursorTo(i, 1);
+        process.stdout.write(grnsqr);
+    }
+    process.stdout.write("\n\n");
 }
-WritePATH();
 
-function writeFiles() {
+async function WritePATH() {
+    // await progress("Creating PATH backup file...");
+    console.log("Creating PATH backup file...");
+    cp.exec("echo %PATH% > path_backup.txt");
+
+    // await progress("Writing to PATH...");
+    console.log("Writing to PATH...");
+    cp.exec(`setx PATH "%PATH%;C:\\Program Files\\GhostScript"`);
+    cp.exec(`setx PATHEXE "%PATHEXE;.gst"`);
+    cp.exec(`assoc .gst=ghostscript`);
+    cp.exec(`ftype ghostscript="C:\\Program Files\\GhostScript\\GhostScript.exe" "%1"`);
+    cp.exec(`reg add "HKEY_CLASSES_ROOT\\ghostscript" /ve /d "GhostScript" /f`);
+
+    await writeFiles();
+}
+
+async function writeFiles() {
     const gsPF = "C:\\Program Files\\GhostScript";
+    // await progress("Checking for existing installation...");
+
     if(fs.existsSync(gsPF)) {
-        console.log(`GhostScript already installed.`);
-        console.log("Preparing uninstall...");
+        console.log("Removing existing installation...");
         fs.rmSync(gsPF, { recursive: true });
     }
-    console.log("Creating install directory...");
-    fs.mkdirSync(gsPF);
+
+    // await progress("Creating installation directory...");
+    console.log("Creating installation directory...");
+    fs.mkdirSync(gsPF, { recursive: true });
+
+    // await progress("Copying files...", 25, 60);
     console.log("Generating files...");
-    fs.cpSync(path.join(__dirname, ".."), gsPF, { recursive: true });
-    console.log("Finishing operation...");
-    console.log("GhostScript installation complete.");
+    const base = path.join(__dirname, "..");
+    const dirs = fs.readdirSync(base, { recursive: true, withFileTypes: true });
+    for(const dirent of dirs) {
+        if(dirent.isFile()) {
+            const src = path.join(base, dirent.name);
+            const dest = path.join(gsPF, dirent.name);
+            console.log(`Generating '${dirent.name}'...`);
+            fs.mkdirSync(path.dirname(dest), { recursive: true });
+            fs.copyFileSync(src, dest);
+        }
+    }
+
+    // await progress("Finalizing installation...", 15, 80);
+    console.log("Finalizing...");
+    console.log("\nGhostScript installation complete!");
+    console.log("You can now run .gst files directly.");
 }
 
-function clear() {
-    process.stdout.write("\r\e[2K");
-}
-
-function write(msg) {
-    process.stdout.write(msg);
-}
-
-//cls
+WritePATH();
