@@ -44,6 +44,7 @@ const file = nbd("File", `<a id="new_file">New File</a><a id="new_folder">New Fo
 const edit = nbd("Edit", ``);
 const view = nbd("View", ``);
 const run = nbd("Run", ``);
+const debug = nbd("Debug", )
 const terminal = nbd("Terminal", ``);
 const help = nbd("Help", ``);
 const community = nbd("Community", ``);
@@ -51,7 +52,7 @@ const github = nbl("GitHub", "https://github.com/BeanTheAlien/GhostScript");
 ul.innerHTML = [file, edit, view, run, terminal, help, community, github].join("");
 add(ul);
 const [fNewFile, fNewFolder, fNewProj, fOpenFile, fOpenFolder, fOpenProj, fSave, fSaveAs] = ["new_file", "new_folder", "new_proj", "open_file", "open_folder", "open_proj", "save", "save_as"].map(id => el(id));
-async function genFile() {
+function genFile() {
   try {
     // const handle = await window.showSaveFilePicker({
     //   excludeAcceptAllOption: true,
@@ -76,7 +77,10 @@ async function genFile() {
     }
     on(finish, "click", () => {
       const val = el("fname").value;
-      fs.writeFileSync(`${__dirname}/${val}.gst`, "");
+      const fpath = path.join(__dirname, `${val}.gst`);
+      console.log(`Writing '${fpath}'...`);
+      fs.writeFileSync(fpath, "");
+      console.log(`Wrote '${fpath}' successfully.`);
       defOper();
     });
     on(cancel, "click", defOper);
@@ -85,6 +89,94 @@ async function genFile() {
   }
 }
 on(fNewFile, "click", genFile);
+async function genFolder() {
+  try {
+    let name;
+    const modal = mk("dialog", { innerHTML: `Enter the name for your folder:<br><input type="text" id="fname" placeholder="Enter folder name...">Choose a directory for your project:<br><button id="c_dir">Choose...</button><p id="dir_out">No directory selected.</p><button id="fin_btn">Finish</button><button id="cnl_btn">Cancel</button>` });
+    modal.show();
+    add(modal);
+    const finish = el("fin_btn");
+    const cancel = el("cnl_btn");
+    const defOper = () => {
+      modal.innerHTML = "";
+      modal.hide();
+      rem(modal);
+    }
+    on(finish, "click", () => {
+      const val = el("fname").value;
+      const folder = path.join(name, val);
+      console.log(`Creating '${folder}'...`);
+      fs.mkdirSync(folder);
+      console.log(`Created '${folder}' successfully.`);
+      defOper();
+    });
+    on(cancel, "click", defOper);
+    on(el("c_dir"), "click", () => {
+      const handle = await window.showDirectoryPicker();
+      const name = handle.name;
+      el("dir_out").textContent = name;
+    })
+  } catch(e) {
+    console.error(`An error occured: ${e}`);
+  }
+}
+on(fNewFolder, "click", genFolder);
+function genProj() {
+  try {
+    const modal = mk("dialog");
+    const pg = (content) => mk("div", { innerHTML: `${content}<button id="next_btn">Next</button>` });
+    const nextPg = (toPg) => {
+      modal.innerHTML = "";
+      modal.innerHTML = toPg;
+    }
+    const next = () => el("next_btn");
+    modal.show();
+    add(modal);
+    modal.innerHTML = pg(`<h1>GhostScript Project Wizard</h1><br><p>Setting up a new GhostScript project.</p><p>This wizard will guide you through the creation process.</p>`);
+    on(next(), "click", () => {
+      nextPg(pg(`<h1>Step 1</h1><br><p>Please enter a name for your project:</p><input type="text" id="pname" placeholder="Really Cool Name">`));
+      on(next(), "click", () => {
+        const projName = el("pname").value;
+        let dir = null;
+        nextPg(pg(`<h1>Step 2</h1><br><p>Please choose a directory for your project:</p><button id="c_dir">Choose...</button><p id="dir_out">No directory selected.</p>`));
+        on(el("c_dir"), "click", async () => {
+          dir = await window.showDirectoryPicker();
+          el("dir_out").textContent = dir.name;
+          dir = dir.name;
+        });
+        on(next(), "click", () => {
+          nextPg(pg(`<h1>Finalize</h1><br><p>Project name: ${projName}</p><p>Project directory: ${dir}</p>`));
+          on(next(), "click", () => {
+            nextPg(pg(`<p>Please wait...</p>`));
+            try {
+              console.log(`Making '${dir}'...`);
+              fs.mkdirSync(dir);
+              console.log(`Made '${dir}' successfully.`);
+              console.log(`Writing '${projName}'...`);
+              fs.writeFileSync(`${projName}.gst`);
+              console.log(`Wrote '${projName}' successfully.`);
+              nextPg(pg(`<h1>Success!</h1><br><p>Project created!</p>`));
+              next().textContent = "Close";
+              on(next(), "click", () => {
+                modal.hide();
+                rem(modal);
+              });
+            } catch(e) {
+              nextPg(pg(`<h1>Fail</h1><p>An error occured during initialzation.</p><p>${e}</p>`));
+              next().textContent = "Close";
+              on(next(), "click", () => {
+                modal.hide();
+                rem(modal);
+              });
+            }
+          });
+        });
+      });
+    });
+  } catch(e) {
+    console.error(`An error occured: ${e}`);
+  }
+}
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
