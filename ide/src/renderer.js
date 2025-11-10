@@ -27,6 +27,8 @@
  */
 
 import "./index.css";
+import * as fs from "fs";
+import * as path from "path";
 
 const mk = (tag, opts = {}) => Object.assign(document.createElement(tag), opts);
 const add = (c, p = document.body) => p.appendChild(c);
@@ -50,17 +52,23 @@ add(ul);
 const [fNewFile, fNewFolder, fNewProj, fOpenFile, fOpenFolder, fOpenProj, fSave, fSaveAs] = ["new_file", "new_folder", "new_proj", "open_file", "open_folder", "open_proj", "save", "save_as"].map(id => el(id));
 async function genFile() {
   try {
-    const handle = await window.showSaveFilePicker({
-      excludeAcceptAllOption: true,
-      types: [{
-        accept: {
-          "ghostscript/text": [".gst"]
-        }
-      }]
-    });
-    const stream = await handle.createWritable();
-    await stream.write("");
-    await stream.close();
+    // const handle = await window.showSaveFilePicker({
+    //   excludeAcceptAllOption: true,
+    //   types: [{
+    //     accept: {
+    //       "ghostscript/text": [".gst"]
+    //     }
+    //   }]
+    // });
+    // const stream = await handle.createWritable();
+    // await stream.write("");
+    // await stream.close();
+    const modal = mk("dialog", { innerHTML: `Enter the name for your file:<br><input type="text" id="fname" placeholder="Enter file name..."><button id="fin_btn">Finish</button><button id="stp_btn">Cancel</button>` });
+    modal.show();
+    add(modal);
+    const name = window.prompt("Enter new file name: ");
+    if(!name) return;
+    fs.writeFileSync(`${__dirname}/${name}.gst`, "");
   } catch(e) {
     console.error(`An error occured: ${e}`);
   }
