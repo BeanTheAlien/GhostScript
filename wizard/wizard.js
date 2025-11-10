@@ -49,13 +49,26 @@ async function writeFiles() {
     const base = path.join(__dirname, "..");
     const files = walkDir(base);
 
-    for (const rel of files) {
+    for(const rel of files) {
         const src = path.join(base, rel);
         const dest = path.join(gsPF, rel);
         fs.mkdirSync(path.dirname(dest), { recursive: true });
         fs.copyFileSync(src, dest);
         console.log(`Generating '${rel}'...`);
     }
+
+    console.log("Writing config file...");
+    fs.writeFileSync(path.join(gsPF, "config.json"), JSON.stringify({
+        "default_modules": [],
+        "gs_use_latest": false,
+        "gs_use_autodebugger": true,
+        "gs_use_context_awareness": true,
+        "gs_use_ghost_assistant": true,
+        "gs_token_config": null,
+        "gs_use_verbose": true,
+        "gs_use_hard_const": true,
+        "gs_use_static": false
+    }, null, 4));
 
     console.log("Finalizing...");
     console.log("\nGhostScript installation complete!");
