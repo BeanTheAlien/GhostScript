@@ -61,9 +61,11 @@ async function genFile() {
     const stream = await handle.createWritable();
     await stream.write("");
     await stream.close();
-  } catch(e) {}
+  } catch(e) {
+    console.error(`An error occured: ${e}`);
+  }
 }
-on(fNewFile, "click", () => {});
+on(fNewFile, "click", genFile);
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
