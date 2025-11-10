@@ -32,6 +32,7 @@ import * as path from "path";
 
 const mk = (tag, opts = {}) => Object.assign(document.createElement(tag), opts);
 const add = (c, p = document.body) => p.appendChild(c);
+const rem = (c, p = document.body) => p.removeChild(c);
 const el = (id) => document.getElementById(id);
 const on = (el, ev, ex) => el.addEventListener(ev, ex);
 const off = (el, ev, ex) => el.removeEventListener(ev, ex);
@@ -63,12 +64,22 @@ async function genFile() {
     // const stream = await handle.createWritable();
     // await stream.write("");
     // await stream.close();
-    const modal = mk("dialog", { innerHTML: `Enter the name for your file:<br><input type="text" id="fname" placeholder="Enter file name..."><button id="fin_btn">Finish</button><button id="stp_btn">Cancel</button>` });
+    const modal = mk("dialog", { innerHTML: `Enter the name for your file:<br><input type="text" id="fname" placeholder="Enter file name..."><button id="fin_btn">Finish</button><button id="cnl_btn">Cancel</button>` });
     modal.show();
     add(modal);
-    const name = window.prompt("Enter new file name: ");
-    if(!name) return;
-    fs.writeFileSync(`${__dirname}/${name}.gst`, "");
+    const finish = el("fin_btn");
+    const cancel = el("cnl_btn");
+    const defOper = () => {
+      modal.innerHTML = "";
+      modal.hide();
+      rem(modal);
+    }
+    on(finish, "click", () => {
+      const val = el("fname").value;
+      fs.writeFileSync(`${__dirname}/${val}.gst`, "");
+      defOper();
+    });
+    on(cancel, "click", defOper);
   } catch(e) {
     console.error(`An error occured: ${e}`);
   }
