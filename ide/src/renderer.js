@@ -186,12 +186,37 @@ function genProj() {
                 "version": "1.0.0",
                 "modules": {},
                 "bin": {
-                  "bin_names": [projName],
-                  "bin_dir": "./bin",
-                  "bin_cmds": []
+                  "names": [projName],
+                  "dir": "./bin"
                 }
               }, null, 4)); 
               console.log(`Wrote ${dir}/project.json successfully.`);
+              console.log(`Making '${dir}/bin'...`);
+              fsMkDir(pathJoin(dir, "bin"));
+              console.log(`Made '${dir}/bin' successfully.`);
+              console.log(`Writing '${dir}/bin/bin.js'...`);
+              fsWrite(pathJoin(dir, "bin", "bin.js"), `#!/usr/bin/env node
+              const fs = require("fs");
+              const path = require("path");
+              
+              const [,, cmd, ...args] = process.argv;
+              const commandsDir = path.join(__dirname, "cmds");
+              
+              const commands = Object.fromEntries(
+                  fs.readdirSync(commandsDir)
+                      .map(file => [file.replace(".js", ""), () => require(path.join(commandsDir, file))])
+              );
+              
+              if(commands[cmd]) {
+                  const module = commands[cmd]();
+                  module.default(args);
+              } else {
+                  console.log(\`Unknown command: \${cmd}\`);
+              }`);
+              console.log(`Wrote '${dir}/bin/bin.js' successfully.`);
+              console.log(`Making '${dir}/bin/cmds'...`);
+              fsMkDir(pathJoin(dir, "bin", "cmds"));
+              console.log(`Made '${dir}/bin/cmds' successfully.`);
               next = nextPg(pg(`<h1>Success!</h1><br><p>Project created!</p>`));
               next.textContent = "Close";
               on(next, "click", () => {
