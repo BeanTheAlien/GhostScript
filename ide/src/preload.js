@@ -12,5 +12,7 @@ contextBridge.exposeInMainWorld("ide", {
     pathJoin: (...paths) => path.join(...paths),
     chooseDir: () => ipcRenderer.invoke("choose-dir"),
     fsExists: (path) => fs.existsSync(path),
-    chooseFile: () => ipcRenderer.invoke("choose-file")
+    chooseFile: () => ipcRenderer.invoke("choose-file"),
+    fsReadDir: (path, opts = {}) => fs.readdirSync(path, { recursive: true, ...opts }),
+    pathBasename: (path) => path.basename(path)
 });

@@ -35,6 +35,9 @@ const fsMkDir = window.ide.fsMkDir;
 const pathJoin = window.ide.pathJoin;
 const chooseDir = window.ide.chooseDir;
 const fsExists = window.ide.fsExists;
+const chooseFile = window.ide.chooseFile;
+const fsReadDir = window.ide.fsReadDir;
+const pathBasename = window.ide.pathBasename;
 
 const mk = (tag, opts = {}) => Object.assign(document.createElement(tag), opts);
 const add = (c, p = document.body) => p.appendChild(c);
@@ -60,6 +63,15 @@ add(ul);
 const [fNewFile, fNewFolder, fNewProj, fOpenFile, fOpenFolder, fOpenProj, fSave, fSaveAs] = ["new_file", "new_folder", "new_proj", "open_file", "open_folder", "open_proj", "save", "save_as"].map(id => el(id));
 const [rRunDebug, rRunNormal, rRunSafe] = ["run_dbg", "run_nm", "run_safe"].map(id => el(id));
 const [dDebug, dFindErrs, dFix] = ["debug", "find_errs", "fix"].map(id => el(id));
+const proj = mk("div", { innerHTML: null });
+var projData = {};
+const projAppend = (f, c) => {
+  if(projData[f]) return;
+  if(!proj.length) proj.innerHTML = f;
+  else proj.innerHTML = f;
+  projData[f] = c;
+}
+add(proj);
 function genFile() {
   try {
     // const handle = await window.showSaveFilePicker({
@@ -161,9 +173,12 @@ function genProj() {
                 fsMkDir(dir);
                 console.log(`Made '${dir}' successfully.`);
               }
-              console.log(`Writing '${projName}'...`);
-              fsWrite(`${projName}.gst`, "");
-              console.log(`Wrote '${projName}' successfully.`);
+              console.log(`Writing '${dir}/${projName}'...`);
+              fsWrite(pathJoin(dir, `${projName}.gst`), "");
+              console.log(`Wrote '${dir}/${projName}' successfully.`);
+              console.log(`Writing '${dir}/README.md'...`);
+              fsWrite(pathJoin(dir, "README.md"), `# ${projName}`);
+              console.log(`Wrote '${dir}/README.md' successfully.`);
               next = nextPg(pg(`<h1>Success!</h1><br><p>Project created!</p>`));
               next.textContent = "Close";
               on(next, "click", () => {
@@ -187,6 +202,36 @@ function genProj() {
   }
 }
 on(fNewProj, "click", genProj);
+async function openFile() {
+  try {
+    const file = await chooseFile();
+    const cont = fsRead(file);
+    projAppend(file, cont);
+  } catch(e) {
+    coneole.error(`An error occured: ${e}`);
+  }
+}
+on(fOpenFile, "click", openFile);
+async function openFolder() {
+  try {
+    const folder = await chooseDir();
+    const cont = fsReadDir(folder);
+    projAppend(folder, cont);
+  } catch(e) {
+    console.error(`An error occured: ${e}`);
+  }
+}
+on(fOpenFolder, "click", openFolder);
+async function openProj() {
+  try {
+    const folder = await chooseDir();
+    if(!fsExists(pathJoin(folder, "README.md"))) throw new Error(`Invalid project path '${folder}'. (missing 'README.md')`);
+    proj.innerHTML = fsReadDir(folder);
+    projData = folder;
+  } catch(e) {
+    console.error(`An error occured: ${e}`);
+  }
+}
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
