@@ -34,6 +34,7 @@ const fsRead = window.ide.fsRead;
 const fsMkDir = window.ide.fsMkDir;
 const pathJoin = window.ide.pathJoin;
 const chooseDir = window.ide.chooseDir;
+const fsExists = window.ide.fsExists;
 
 const mk = (tag, opts = {}) => Object.assign(document.createElement(tag), opts);
 const add = (c, p = document.body) => p.appendChild(c);
@@ -131,47 +132,48 @@ on(fNewFolder, "click", genFolder);
 function genProj() {
   try {
     const modal = mk("dialog");
-    const pg = (content) => mk("div", { innerHTML: `${content}<button id="next_btn">Next</button>` });
+    const pg = (content) => `<div>${content}</div><button id="next_btn">Next</button>`;
     const nextPg = (toPg) => {
-      modal.innerHTML = "";
       modal.innerHTML = toPg;
+      return el("next_btn");
     }
-    const next = () => el("next_btn");
-    modal.showModal();
     add(modal);
-    modal.innerHTML = pg(`<h1>GhostScript Project Wizard</h1><br><p>Setting up a new GhostScript project.</p><p>This wizard will guide you through the creation process.</p>`);
-    on(next(), "click", () => {
-      nextPg(pg(`<h1>Step 1</h1><br><p>Please enter a name for your project:</p><input type="text" id="pname" placeholder="Really Cool Name">`));
-      on(next(), "click", () => {
+    modal.showModal();
+    let next = nextPg(pg(`<h1>GhostScript Project Wizard</h1><br><p>Setting up a new GhostScript project.</p><p>This wizard will guide you through the creation process.</p>`));
+    on(next, "click", () => {
+      next = nextPg(pg(`<h1>Step 1</h1><br><p>Please enter a name for your project:</p><input type="text" id="pname" placeholder="Really Cool Name">`));
+      on(next, "click", () => {
         const projName = el("pname").value;
         let dir = null;
-        nextPg(pg(`<h1>Step 2</h1><br><p>Please choose a directory for your project:</p><button id="c_dir">Choose...</button><p id="dir_out">No directory selected.</p>`));
+        next = nextPg(pg(`<h1>Step 2</h1><br><p>Please choose a directory for your project:</p><button id="c_dir">Choose...</button><p id="dir_out">No directory selected.</p>`));
         on(el("c_dir"), "click", async () => {
           const handle = await chooseDir();
           dir = handle;
           el("dir_out").textContent = dir;
         });
-        on(next(), "click", () => {
-          nextPg(pg(`<h1>Finalize</h1><br><p>Project name: ${projName}</p><p>Project directory: ${dir}</p>`));
-          on(next(), "click", () => {
-            nextPg(pg(`<p>Please wait...</p>`));
+        on(next, "click", () => {
+          next = nextPg(pg(`<h1>Finalize</h1><br><p>Project name: ${projName}</p><p>Project directory: ${dir}</p>`));
+          on(next, "click", () => {
+            next = nextPg(pg(`<p>Please wait...</p>`));
             try {
-              console.log(`Making '${dir}'...`);
-              fsMkDir(dir);
-              console.log(`Made '${dir}' successfully.`);
+              if(!fsExists(dir)) {
+                console.log(`Making '${dir}'...`);
+                fsMkDir(dir);
+                console.log(`Made '${dir}' successfully.`);
+              }
               console.log(`Writing '${projName}'...`);
               fsWrite(`${projName}.gst`, "");
               console.log(`Wrote '${projName}' successfully.`);
-              nextPg(pg(`<h1>Success!</h1><br><p>Project created!</p>`));
-              next().textContent = "Close";
-              on(next(), "click", () => {
+              next = nextPg(pg(`<h1>Success!</h1><br><p>Project created!</p>`));
+              next.textContent = "Close";
+              on(next, "click", () => {
                 modal.close();
                 rem(modal);
               });
             } catch(e) {
-              nextPg(pg(`<h1>Fail</h1><p>An error occured during initialzation.</p><p>${e}</p>`));
-              next().textContent = "Close";
-              on(next(), "click", () => {
+              next = nextPg(pg(`<h1>Fail</h1><p>An error occured during initialzation.</p><p>${e}</p>`));
+              next.textContent = "Close";
+              on(next, "click", () => {
                 modal.close();
                 rem(modal);
               });
@@ -184,6 +186,7 @@ function genProj() {
     console.error(`An error occured: ${e}`);
   }
 }
+on(fNewProj, "click", genProj);
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',

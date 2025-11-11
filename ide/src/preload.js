@@ -10,5 +10,6 @@ contextBridge.exposeInMainWorld("ide", {
     fsRead: (path) => fs.readFileSync(path, "utf8"),
     fsMkDir: (path) => fs.mkdirSync(path),
     pathJoin: (...paths) => path.join(...paths),
-    chooseDir: () => ipcRenderer.invoke("choose-dir")
+    chooseDir: () => ipcRenderer.invoke("choose-dir"),
+    fsExists: (path) => fs.existsSync(path)
 });
