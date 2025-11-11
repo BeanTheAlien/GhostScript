@@ -1,8 +1,8 @@
 {
-  "name": "ide",
-  "productName": "ide",
+  "name": "ghostscript_ide",
+  "productName": "GhostScript IDE",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "The offical GhostScript IDE.",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",

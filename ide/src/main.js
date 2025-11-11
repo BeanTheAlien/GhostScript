@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const started = require("electron-squirrel-startup");
 
@@ -14,7 +14,8 @@ const createWindow = () => {
     height: 600,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
-      nodeIntegration: true
+      nodeIntegration: true,
+      contextIsolation: true
     }
   });
 
@@ -28,6 +29,13 @@ const createWindow = () => {
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
+
+ipcMain.handle("choose-dir", async () => {
+    const res = await dialog.showOpenDialog({
+        properties: ["openDirectory"]
+    });
+    return res.filePaths[0];
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

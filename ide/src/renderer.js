@@ -27,8 +27,13 @@
  */
 
 import "./index.css";
-import * as fs from "fs";
-import * as path from "path";
+
+const dirname = window.ide.getDirname();
+const fsWrite = window.ide.fsWrite;
+const fsRead = window.ide.fsRead;
+const fsMkDir = window.ide.fsMkDir;
+const pathJoin = window.ide.pathJoin;
+const chooseDir = window.ide.chooseDir;
 
 const mk = (tag, opts = {}) => Object.assign(document.createElement(tag), opts);
 const add = (c, p = document.body) => p.appendChild(c);
@@ -68,20 +73,20 @@ function genFile() {
     // await stream.write("");
     // await stream.close();
     const modal = mk("dialog", { innerHTML: `Enter the name for your file:<br><input type="text" id="fname" placeholder="Enter file name..."><button id="fin_btn">Finish</button><button id="cnl_btn">Cancel</button>` });
-    modal.show();
     add(modal);
+    modal.showModal();
     const finish = el("fin_btn");
     const cancel = el("cnl_btn");
     const defOper = () => {
       modal.innerHTML = "";
-      modal.hide();
+      modal.close();
       rem(modal);
     }
     on(finish, "click", () => {
       const val = el("fname").value;
-      const fpath = path.join(__dirname, `${val}.gst`);
+      const fpath = pathJoin(dirname, `${val}.gst`);
       console.log(`Writing '${fpath}'...`);
-      fs.writeFileSync(fpath, "");
+      fsWrite(fpath, "");
       console.log(`Wrote '${fpath}' successfully.`);
       defOper();
     });
@@ -93,29 +98,29 @@ function genFile() {
 on(fNewFile, "click", genFile);
 async function genFolder() {
   try {
-    let name;
+    let name = "";
     const modal = mk("dialog", { innerHTML: `Enter the name for your folder:<br><input type="text" id="fname" placeholder="Enter folder name...">Choose a directory for your project:<br><button id="c_dir">Choose...</button><p id="dir_out">No directory selected.</p><button id="fin_btn">Finish</button><button id="cnl_btn">Cancel</button>` });
-    modal.show();
     add(modal);
+    modal.showModal();
     const finish = el("fin_btn");
     const cancel = el("cnl_btn");
     const defOper = () => {
       modal.innerHTML = "";
-      modal.hide();
+      modal.close();
       rem(modal);
     }
     on(finish, "click", () => {
       const val = el("fname").value;
-      const folder = path.join(name, val);
+      const folder = pathJoin(name, val);
       console.log(`Creating '${folder}'...`);
-      fs.mkdirSync(folder);
+      fsMkDir(folder);
       console.log(`Created '${folder}' successfully.`);
       defOper();
     });
     on(cancel, "click", defOper);
-    on(el("c_dir"), "click", () => {
-      const handle = await window.showDirectoryPicker();
-      const name = handle.name;
+    on(el("c_dir"), "click", async () => {
+      const handle = await chooseDir();
+      name = handle;
       el("dir_out").textContent = name;
     })
   } catch(e) {
@@ -132,7 +137,7 @@ function genProj() {
       modal.innerHTML = toPg;
     }
     const next = () => el("next_btn");
-    modal.show();
+    modal.showModal();
     add(modal);
     modal.innerHTML = pg(`<h1>GhostScript Project Wizard</h1><br><p>Setting up a new GhostScript project.</p><p>This wizard will guide you through the creation process.</p>`);
     on(next(), "click", () => {
@@ -142,9 +147,9 @@ function genProj() {
         let dir = null;
         nextPg(pg(`<h1>Step 2</h1><br><p>Please choose a directory for your project:</p><button id="c_dir">Choose...</button><p id="dir_out">No directory selected.</p>`));
         on(el("c_dir"), "click", async () => {
-          dir = await window.showDirectoryPicker();
-          el("dir_out").textContent = dir.name;
-          dir = dir.name;
+          const handle = await chooseDir();
+          dir = handle;
+          el("dir_out").textContent = dir;
         });
         on(next(), "click", () => {
           nextPg(pg(`<h1>Finalize</h1><br><p>Project name: ${projName}</p><p>Project directory: ${dir}</p>`));
@@ -152,22 +157,22 @@ function genProj() {
             nextPg(pg(`<p>Please wait...</p>`));
             try {
               console.log(`Making '${dir}'...`);
-              fs.mkdirSync(dir);
+              fsMkDir(dir);
               console.log(`Made '${dir}' successfully.`);
               console.log(`Writing '${projName}'...`);
-              fs.writeFileSync(`${projName}.gst`);
+              fsWrite(`${projName}.gst`, "");
               console.log(`Wrote '${projName}' successfully.`);
               nextPg(pg(`<h1>Success!</h1><br><p>Project created!</p>`));
               next().textContent = "Close";
               on(next(), "click", () => {
-                modal.hide();
+                modal.close();
                 rem(modal);
               });
             } catch(e) {
               nextPg(pg(`<h1>Fail</h1><p>An error occured during initialzation.</p><p>${e}</p>`));
               next().textContent = "Close";
               on(next(), "click", () => {
-                modal.hide();
+                modal.close();
                 rem(modal);
               });
             }
