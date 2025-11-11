@@ -11,5 +11,6 @@ contextBridge.exposeInMainWorld("ide", {
     fsMkDir: (path) => fs.mkdirSync(path),
     pathJoin: (...paths) => path.join(...paths),
     chooseDir: () => ipcRenderer.invoke("choose-dir"),
-    fsExists: (path) => fs.existsSync(path)
+    fsExists: (path) => fs.existsSync(path),
+    chooseFile: () => ipcRenderer.invoke("choose-file")
 });

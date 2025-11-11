@@ -31,10 +31,16 @@ const createWindow = () => {
 };
 
 ipcMain.handle("choose-dir", async () => {
-    const res = await dialog.showOpenDialog({
-        properties: ["openDirectory"]
-    });
-    return res.filePaths[0];
+  const res = await dialog.showOpenDialog({
+      properties: ["openDirectory"]
+  });
+  return res.filePaths[0];
+});
+ipcMain.handle("choose-file", async () => {
+  const res = await dialog.showOpenDialog({
+    properties: ["openFile"]
+  });
+  return res.filePaths[0];
 });
 
 // This method will be called when Electron has finished
