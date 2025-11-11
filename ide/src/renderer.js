@@ -65,6 +65,7 @@ const [rRunDebug, rRunNormal, rRunSafe] = ["run_dbg", "run_nm", "run_safe"].map(
 const [dDebug, dFindErrs, dFix] = ["debug", "find_errs", "fix"].map(id => el(id));
 const proj = mk("div", { innerHTML: null });
 var projData = {};
+var curFile = null;
 const projAppend = (f, c) => {
   if(projData[f]) return;
   if(!proj.length) proj.innerHTML = f;
@@ -266,6 +267,23 @@ async function openProj() {
     if(!fsExists(pathJoin(folder, "README.md"))) throw new Error(`Invalid project path '${folder}'. (missing 'README.md')`);
     proj.innerHTML = fsReadDir(folder);
     projData = folder;
+  } catch(e) {
+    console.error(`An error occured: ${e}`);
+  }
+}
+function save() {
+  try {
+    const cont = fsRead(curFile);
+    fsWrite(curFile, cont);
+  } catch(e) {
+    console.error(`An error occured: ${e}`);
+  }
+}
+async function saveAs() {
+  try {
+    const file = await chooseFile();
+    const cont = fsRead(curFile);
+    fsWrite(curFile, cont);
   } catch(e) {
     console.error(`An error occured: ${e}`);
   }
