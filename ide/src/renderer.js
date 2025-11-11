@@ -179,6 +179,19 @@ function genProj() {
               console.log(`Writing '${dir}/README.md'...`);
               fsWrite(pathJoin(dir, "README.md"), `# ${projName}`);
               console.log(`Wrote '${dir}/README.md' successfully.`);
+              console.log(`Writing '${dir}/project.json'...`);
+              fsWrite(pathJoin(dir, "project.json"), JSON.stringify({
+                "name": projName,
+                "author": "johndoe",
+                "version": "1.0.0",
+                "modules": {},
+                "bin": {
+                  "bin_names": [projName],
+                  "bin_dir": "./bin",
+                  "bin_cmds": []
+                }
+              }, null, 4)); 
+              console.log(`Wrote ${dir}/project.json successfully.`);
               next = nextPg(pg(`<h1>Success!</h1><br><p>Project created!</p>`));
               next.textContent = "Close";
               on(next, "click", () => {
