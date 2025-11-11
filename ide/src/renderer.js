@@ -271,6 +271,7 @@ async function openProj() {
     console.error(`An error occured: ${e}`);
   }
 }
+on(fOpenProj, "click", openProj);
 function save() {
   try {
     const cont = fsRead(curFile);
@@ -279,15 +280,17 @@ function save() {
     console.error(`An error occured: ${e}`);
   }
 }
+on(fSave, "click", save);
 async function saveAs() {
   try {
     const file = await chooseFile();
     const cont = fsRead(curFile);
-    fsWrite(curFile, cont);
+    fsWrite(file, cont);
   } catch(e) {
     console.error(`An error occured: ${e}`);
   }
 }
+on(fSaveAs, "click", saveAs);
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
