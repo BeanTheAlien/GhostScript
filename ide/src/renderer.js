@@ -63,29 +63,21 @@ add(ul);
 const [fNewFile, fNewFolder, fNewProj, fOpenFile, fOpenFolder, fOpenProj, fSave, fSaveAs] = ["new_file", "new_folder", "new_proj", "open_file", "open_folder", "open_proj", "save", "save_as"].map(id => el(id));
 const [rRunDebug, rRunNormal, rRunSafe] = ["run_dbg", "run_nm", "run_safe"].map(id => el(id));
 const [dDebug, dFindErrs, dFix] = ["debug", "find_errs", "fix"].map(id => el(id));
-const proj = mk("div", { innerHTML: null });
-var projData = {};
 var curFile = null;
-const projAppend = (f, c) => {
-  if(projData[f]) return;
-  if(!proj.length) proj.innerHTML = f;
-  else proj.innerHTML = f;
-  projData[f] = c;
-}
-add(proj);
+const sidebar = mk("div", { id: "sidebar" });
+sidebar.style.width = "250px";
+sidebar.style.background = "#1e1e1e";
+sidebar.style.color = "#ccc";
+sidebar.style.overflowY = "auto";
+add(sidebar);
+const editorTabs = mk("div", { id: "tabs" });
+const editorPane = mk("div", { id: "editor" });
+add(editorTabs);
+add(editorPane);
+const editorArea = mk("textarea");
+
 function genFile() {
   try {
-    // const handle = await window.showSaveFilePicker({
-    //   excludeAcceptAllOption: true,
-    //   types: [{
-    //     accept: {
-    //       "ghostscript/text": [".gst"]
-    //     }
-    //   }]
-    // });
-    // const stream = await handle.createWritable();
-    // await stream.write("");
-    // await stream.close();
     const modal = mk("dialog", { innerHTML: `Enter the name for your file:<br><input type="text" id="fname" placeholder="Enter file name..."><button id="fin_btn">Finish</button><button id="cnl_btn">Cancel</button>` });
     add(modal);
     modal.showModal();
@@ -244,29 +236,46 @@ on(fNewProj, "click", genProj);
 async function openFile() {
   try {
     const file = await chooseFile();
+    if(!file) return;
     const cont = fsRead(file);
     projAppend(file, cont);
   } catch(e) {
-    coneole.error(`An error occured: ${e}`);
+    console.error(`An error occured: ${e}`);
   }
 }
 on(fOpenFile, "click", openFile);
 async function openFolder() {
   try {
     const folder = await chooseDir();
-    const cont = fsReadDir(folder);
-    projAppend(folder, cont);
+    if(!folder) return;
+    const files = fsReadDir(folder);
+    sidebar.innerHTML = ""; // clear old
+    const ul = mk("ul");
+    files.forEach(f => {
+      const li = mk("li", { innerText: f });
+      li.onclick = () => openFileView(pathJoin(folder, f));
+      add(li, ul);
+      add(mk("br"), ul);
+    });
+    add(ul, sidebar);
   } catch(e) {
-    console.error(`An error occured: ${e}`);
+    console.error(`An error occurred: ${e}`);
   }
 }
 on(fOpenFolder, "click", openFolder);
 async function openProj() {
   try {
     const folder = await chooseDir();
-    if(!fsExists(pathJoin(folder, "README.md"))) throw new Error(`Invalid project path '${folder}'. (missing 'README.md')`);
-    proj.innerHTML = fsReadDir(folder);
-    projData = folder;
+    if(!fsExists(pathJoin(folder, "project.json"))) throw new Error(`Invalid project path '${folder}'. (missing 'project.json')`);
+    const files = fsReadDir(folder);
+    sidebar.innerHTML = ""; // clear old
+    const ul = mk("ul");
+    files.forEach(f => {
+      const li = mk("li", { innerText: f });
+      li.onclick = () => openFileView(pathJoin(folder, f));
+      add(li, ul);
+    });
+    add(ul, sidebar);
   } catch(e) {
     console.error(`An error occured: ${e}`);
   }
@@ -291,6 +300,27 @@ async function saveAs() {
   }
 }
 on(fSaveAs, "click", saveAs);
+function openFileView(filePath) {
+  const content = fsRead(filePath);
+  curFile = filePath;
+
+  if(!Array.from(editorTabs.children).some(c => c.innerText == pathBasename(filePath))) {
+    const tab = mk("button", { innerText: pathBasename(filePath) });
+    on(tab, "click", () => showEditor(filePath));
+    add(tab, editorTabs);
+  }
+
+  editorArea.value = content;
+  editorArea.style.width = "100%";
+  editorArea.style.height = "calc(100vh - 40px)";
+  editorArea.dataset.path = filePath;
+
+  if(!editorPane.contains(editorArea)) add(editorArea, editorPane);
+}
+function showEditor(filePath) {
+  const content = fsRead(filePath);
+  editorArea.value = content;
+}
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
