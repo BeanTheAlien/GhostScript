@@ -67,7 +67,8 @@ async function writeFiles() {
         "gs_token_config": null,
         "gs_use_verbose": true,
         "gs_use_hard_const": true,
-        "gs_use_static": false
+        "gs_use_strict": false,
+        "gs_path": "C:\\Program Files\\GhostScript"
     }, null, 4));
 
     console.log("Finalizing...");
@@ -82,7 +83,7 @@ async function WritePATH() {
     cp.exec(`setx PATH "%PATH%;C:\\Program Files\\GhostScript"`);
     cp.exec(`setx PATHEXE "%PATHEXE;.gst"`);
     cp.exec(`assoc .gst=ghostscript`);
-    cp.exec(`ftype ghostscript="C:\\Program Files\\GhostScript\\GhostScript.exe" "%1"`);
+    cp.exec(`ftype ghostscript="C:\\Program Files\\GhostScript\\ghostscript.exe" "%1"`);
     cp.exec(`reg add "HKEY_CLASSES_ROOT\\ghostscript" /ve /d "GhostScript" /f`);
 
     await writeFiles();

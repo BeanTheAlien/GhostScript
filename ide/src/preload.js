@@ -7,14 +7,16 @@ const cp = require("child_process");
 
 contextBridge.exposeInMainWorld("ide", {
     getDirname: () => __dirname,
-    fsWrite: (path, data) => fs.writeFileSync(path, data),
-    fsRead: (path) => fs.readFileSync(path, "utf8"),
-    fsMkDir: (path) => fs.mkdirSync(path),
+    fsWrite: (fpath, data) => fs.writeFileSync(fpath, data),
+    fsRead: (fpath) => fs.readFileSync(fpath, "utf8"),
+    fsMkDir: (dpath) => fs.mkdirSync(dpath),
     pathJoin: (...paths) => path.join(...paths),
     chooseDir: () => ipcRenderer.invoke("choose-dir"),
-    fsExists: (path) => fs.existsSync(path),
+    fsExists: (dpath) => fs.existsSync(dpath),
     chooseFile: () => ipcRenderer.invoke("choose-file"),
-    fsReadDir: (path, opts = {}) => fs.readdirSync(path, { recursive: true, ...opts }),
-    pathBasename: (filepath) => path.basename(filepath),
-    cpExec: (cmd) => cp.exec(cmd)
+    fsReadDir: (dpath, opts = {}) => fs.readdirSync(dpath, { recursive: true, ...opts }),
+    pathBasename: (fpath) => path.basename(fpath),
+    cpExec: (cmd) => cp.exec(cmd),
+    fsJSONRead: (fpath) => JSON.parse(fs.readFileSync(fpath, "utf8")),
+    fsJSONWrite: (fpath, data) => fs.writeFileSync(fpath, JSON.stringify(data, null, 4))
 });

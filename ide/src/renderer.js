@@ -39,6 +39,8 @@ const chooseFile = window.ide.chooseFile;
 const fsReadDir = window.ide.fsReadDir;
 const pathBasename = window.ide.pathBasename;
 const cpExec = window.ide.cpExec;
+const fsJSONRead = window.ide.fsJSONRead;
+const fsJSONWrite = window.ide.fsJSONWrite;
 
 console.log("Checking for GhostScript installation...");
 const isInstalled = fsExists("C:\\Program Files\\GhostScript");
@@ -82,7 +84,7 @@ const editorArea = mk("textarea");
 const status = mk("div");
 add(status);
 const popupCSS = { position: fixed, left: "95vw", top: "90vh" };
-if(!isInstalled) {
+const genGSNIPopup = () => {
   const gsNotInstalled = mk("div", { style: popupCSS, innerHTML: `GhostScript not found on your system.<br><button id="install_btn">Install</button><button id="config_path_btn">Configure Path</button>` });
   add(gsNotInstalled);
   on(el("install_btn"), "click", () => {
@@ -93,9 +95,38 @@ if(!isInstalled) {
     }
   );
   on(el("config_path_btn"), "click", () => {
-    const modal = mk("dialog", { innerHTML: `Select path to GhostScript files` });
+    const modal = mk("dialog", { innerHTML: `Select path to GhostScript files:<button id="c_gp">Choose</button><p id="c_path">No path chosen</p><button id="fin">Finish</button>` });
+    add(modal);
+    modal.showModal();
+    let chosen = null;
+    const finBtn = el("fin");
+    finBtn.disabled = true;
+    finBtn.style.opacity = "0.75";
+    const dirOut = el("c_path");
+    on(el("c_gp"), "click", async () => {
+      const dir = await chooseDir();
+      if(!dir) return;
+      chosen = dir;
+      dirOut.textContent = chosen;
+      finBtn.disabled = false;
+      finBtn.style.opacity = "1";
+    });
+    on(finBtn, "click", () => {
+      const jsonConfigPath = pathJoin(chosen, "config.json");
+      if(!fsExists(jsonConfigPath)) {
+        alert("Path does contain GhostScript config file.");
+        console.error(`Path '${chosen}' does not contain GS config file.`);
+        return;
+      }
+      modal.close();
+      rem(modal);
+      const jsonConfigFileContent = fsJSONRead(jsonConfigPath);
+      jsonConfigFileContent.gs_path = chosen;
+      fsJSONWrite(jsonConfigFileContent);
+    });
   });
 }
+if(!isInstalled) genGSNIPopup();
 
 function genFile() {
   try {
