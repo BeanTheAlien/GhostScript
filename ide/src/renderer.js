@@ -85,7 +85,16 @@ const popupCSS = { position: fixed, left: "95vw", top: "90vh" };
 if(!isInstalled) {
   const gsNotInstalled = mk("div", { style: popupCSS, innerHTML: `GhostScript not found on your system.<br><button id="install_btn">Install</button><button id="config_path_btn">Configure Path</button>` });
   add(gsNotInstalled);
-  on(el("install_btn"), "click", () => cpExec("cd ../.. && cd wizard && node wizard.js"));
+  on(el("install_btn"), "click", () => {
+    try {
+      cpExec("cd ../.. && cd wizard && node wizard.js");
+    } catch(e) {
+      console.error(`Failed to run install wizard: ${e}`);
+    }
+  );
+  on(el("config_path_btn"), "click", () => {
+    const modal = mk("dialog", { innerHTML: `Select path to GhostScript files` });
+  });
 }
 
 function genFile() {
