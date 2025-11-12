@@ -3,6 +3,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const cp = require("child_process");
 
 contextBridge.exposeInMainWorld("ide", {
     getDirname: () => __dirname,
@@ -14,5 +15,6 @@ contextBridge.exposeInMainWorld("ide", {
     fsExists: (path) => fs.existsSync(path),
     chooseFile: () => ipcRenderer.invoke("choose-file"),
     fsReadDir: (path, opts = {}) => fs.readdirSync(path, { recursive: true, ...opts }),
-    pathBasename: (filepath) => path.basename(filepath)
+    pathBasename: (filepath) => path.basename(filepath),
+    cpExec: (cmd) => cp.exec(cmd)
 });

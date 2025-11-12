@@ -38,6 +38,10 @@ const fsExists = window.ide.fsExists;
 const chooseFile = window.ide.chooseFile;
 const fsReadDir = window.ide.fsReadDir;
 const pathBasename = window.ide.pathBasename;
+const cpExec = window.ide.cpExec;
+
+console.log("Checking for GhostScript installation...");
+const isInstalled = fsExists("C:\\Program Files\\GhostScript");
 
 const mk = (tag, opts = {}) => Object.assign(document.createElement(tag), opts);
 const add = (c, p = document.body) => p.appendChild(c);
@@ -75,6 +79,14 @@ const editorPane = mk("div", { id: "editor" });
 add(editorTabs);
 add(editorPane);
 const editorArea = mk("textarea");
+const status = mk("div");
+add(status);
+const popupCSS = { position: fixed, left: "95vw", top: "90vh" };
+if(!isInstalled) {
+  const gsNotInstalled = mk("div", { style: popupCSS, innerHTML: `GhostScript not found on your system.<br><button id="install_btn">Install</button><button id="config_path_btn">Configure Path</button>` });
+  add(gsNotInstalled);
+  on(el("install_btn"), "click", () => cpExec("cd ../.. && cd wizard && node wizard.js"));
+}
 
 function genFile() {
   try {
