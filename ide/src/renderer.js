@@ -373,6 +373,9 @@ function showEditor(filePath) {
   const content = fsRead(filePath);
   editorArea.value = content;
 }
+async function runDebug() {}
+async function runNormal() {}
+async function runSafe() {}
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
