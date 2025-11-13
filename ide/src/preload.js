@@ -16,7 +16,7 @@ contextBridge.exposeInMainWorld("ide", {
     chooseFile: () => ipcRenderer.invoke("choose-file"),
     fsReadDir: (dpath, opts = {}) => fs.readdirSync(dpath, { recursive: true, ...opts }),
     pathBasename: (fpath) => path.basename(fpath),
-    cpExec: (cmd, callback = (err, stdout, stderr) => { err, stdout, stderr }) => cp.exec(cmd, callback),
+    cpExec: (cmd, callback = () => {}) => cp.exec(cmd, callback),
     fsJSONRead: (fpath) => JSON.parse(fs.readFileSync(fpath, "utf8")),
     fsJSONWrite: (fpath, data) => fs.writeFileSync(fpath, JSON.stringify(data, null, 4))
 });

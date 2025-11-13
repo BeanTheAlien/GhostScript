@@ -43,7 +43,7 @@ const fsJSONRead = window.ide.fsJSONRead;
 const fsJSONWrite = window.ide.fsJSONWrite;
 
 console.log("Checking for GhostScript installation...");
-const isInstalled = false; //fsExists("C:\\GhostScript");
+const isInstalled = fsExists("C:\\GhostScript");
 if(isInstalled) console.log("GhostScript install found.");
 else console.log("GhostScript install not found.");
 
@@ -53,6 +53,7 @@ const rem = (c, p = document.body) => p.removeChild(c);
 const el = (id) => document.getElementById(id);
 const on = (el, ev, ex) => el.addEventListener(ev, ex);
 const off = (el, ev, ex) => el.removeEventListener(ev, ex);
+const style = (el, styles) => Object.assign(el.style, styles);
 add(mk("h1", { innerText: "GhostScript IDE" }));
 const ul = mk("ul");
 const nbl = (text, to) => `<li><a href="${to}">${text}</a></li>`;
@@ -86,14 +87,13 @@ const editorArea = mk("textarea");
 const status = mk("div");
 add(status);
 const popupCSS = { position: "fixed", bottom: "5vh", right: "5vw", zIndex: 999, pointerEvents: "auto", backgroundColor: "#f2f2f2ff", border: "2px solid rgb(0, 0, 0)" };
-window.onclick = (e) => console.log(document.elementFromPoint(e.clientX, e.clientY));
 const genGSNIPopup = () => {
   const gsNotInstalled = mk("div", { innerHTML: `GhostScript not found on your system.<br><button id="install">Install</button><button id="config_path_btn">Configure Path</button>` });
-  Object.assign(gsNotInstalled.style, popupCSS);
+  style(gsNotInstalled, popupCSS);
   add(gsNotInstalled);
   on(el("install"), "click", () => {
     try {
-      cpExec("node ../../wizard/wizard.js");
+      cpExec("node ../wizard/wizard.js");
       console.log("Wizard run success.");
     } catch(e) {
       console.error(`Failed to run install wizard: ${e}`);
@@ -222,19 +222,20 @@ function genProj() {
           on(next, "click", () => {
             next = nextPg(pg(`<p>Please wait...</p>`));
             try {
-              if(!fsExists(dir)) {
-                console.log(`Making '${dir}'...`);
-                fsMkDir(dir);
-                console.log(`Made '${dir}' successfully.`);
+              const pdir = pathJoin(dir, projName);
+              if(!fsExists(pdir)) {
+                console.log(`Making '${pdir}'...`);
+                fsMkDir(pdir);
+                console.log(`Made '${pdir}' successfully.`);
               }
-              console.log(`Writing '${dir}/${projName}'...`);
-              fsWrite(pathJoin(dir, `${projName}.gst`), "");
-              console.log(`Wrote '${dir}/${projName}' successfully.`);
-              console.log(`Writing '${dir}/README.md'...`);
-              fsWrite(pathJoin(dir, "README.md"), `# ${projName}`);
-              console.log(`Wrote '${dir}/README.md' successfully.`);
-              console.log(`Writing '${dir}/project.json'...`);
-              fsWrite(pathJoin(dir, "project.json"), JSON.stringify({
+              console.log(`Writing '${pdir}\\${projName}'...`);
+              fsWrite(pathJoin(pdir, `${projName}.gst`), "");
+              console.log(`Wrote '${pdir}\\${projName}' successfully.`);
+              console.log(`Writing '${pdir}\\README.md'...`);
+              fsWrite(pathJoin(pdir, "README.md"), `# ${projName}`);
+              console.log(`Wrote '${pdir}\\README.md' successfully.`);
+              console.log(`Writing '${pdir}\\project.json'...`);
+              fsWrite(pathJoin(pdir, "project.json"), JSON.stringify({
                 "name": projName,
                 "author": "johndoe",
                 "version": "1.0.0",
@@ -244,12 +245,12 @@ function genProj() {
                   "dir": "./bin"
                 }
               }, null, 4)); 
-              console.log(`Wrote ${dir}/project.json successfully.`);
-              console.log(`Making '${dir}/bin'...`);
-              fsMkDir(pathJoin(dir, "bin"));
-              console.log(`Made '${dir}/bin' successfully.`);
-              console.log(`Writing '${dir}/bin/bin.js'...`);
-              fsWrite(pathJoin(dir, "bin", "bin.js"), `#!/usr/bin/env node
+              console.log(`Wrote ${pdir}\\project.json successfully.`);
+              console.log(`Making '${pdir}\\bin'...`);
+              fsMkDir(pathJoin(pdir, "bin"));
+              console.log(`Made '${pdir}\\bin' successfully.`);
+              console.log(`Writing '${pdir}\\bin\\bin.js'...`);
+              fsWrite(pathJoin(pdir, "bin", "bin.js"), `#!/usr/bin/env node
               const fs = require("fs");
               const path = require("path");
               
@@ -267,10 +268,10 @@ function genProj() {
               } else {
                   console.log(\`Unknown command: \${cmd}\`);
               }`);
-              console.log(`Wrote '${dir}/bin/bin.js' successfully.`);
-              console.log(`Making '${dir}/bin/cmds'...`);
-              fsMkDir(pathJoin(dir, "bin", "cmds"));
-              console.log(`Made '${dir}/bin/cmds' successfully.`);
+              console.log(`Wrote '${pdir}\\bin\\bin.js' successfully.`);
+              console.log(`Making '${pdir}\\bin\\cmds'...`);
+              fsMkDir(pathJoin(pdir, "bin", "cmds"));
+              console.log(`Made '${pdir}\\bin\\cmds' successfully.`);
               next = nextPg(pg(`<h1>Success!</h1><br><p>Project created!</p>`));
               next.textContent = "Close";
               on(next, "click", () => {
@@ -382,17 +383,27 @@ function showEditor(filePath) {
   const content = fsRead(filePath);
   editorArea.value = content;
 }
-async function runDebug() {}
-function runNormal() {
+function runner(flags) {
+  console.log(curFile);
   const gsFiles = fsReadDir("C:\\GhostScript");
-  cpExec(`node ${pathJoin(gsFiles, "src/main.js")}`, (err, stdout, stderr) => {
+  cpExec(`node "C:\\GhostScript\\src\\main.js" --file "${curFile}" ${flags}`, (err, stdout, stderr) => {
     if(err) throw err;
     if(stderr.length) console.log(stderr);
     else console.log(stdout);
   });
 }
+function runDebug() {
+  runner("--verbose --debug");
+}
+on(rRunDebug, "click", runDebug);
+function runNormal() {
+  runner("");
+}
 on(rRunNormal, "click", runNormal);
-async function runSafe() {}
+function runSafe() {
+  runner("--safe");
+}
+on(rRunSafe, "click", runSafe);
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
