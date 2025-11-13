@@ -43,7 +43,9 @@ const fsJSONRead = window.ide.fsJSONRead;
 const fsJSONWrite = window.ide.fsJSONWrite;
 
 console.log("Checking for GhostScript installation...");
-const isInstalled = fsExists("C:\\Program Files\\GhostScript");
+const isInstalled = false; //fsExists("C:\\GhostScript");
+if(isInstalled) console.log("GhostScript install found.");
+else console.log("GhostScript install not found.");
 
 const mk = (tag, opts = {}) => Object.assign(document.createElement(tag), opts);
 const add = (c, p = document.body) => p.appendChild(c);
@@ -83,19 +85,22 @@ add(editorPane);
 const editorArea = mk("textarea");
 const status = mk("div");
 add(status);
-const popupCSS = { position: fixed, left: "95vw", top: "90vh" };
+const popupCSS = { position: "fixed", bottom: "5vh", right: "5vw", zIndex: 999, pointerEvents: "auto", backgroundColor: "#f2f2f2ff", border: "2px solid rgb(0, 0, 0)" };
+window.onclick = (e) => console.log(document.elementFromPoint(e.clientX, e.clientY));
 const genGSNIPopup = () => {
-  const gsNotInstalled = mk("div", { style: popupCSS, innerHTML: `GhostScript not found on your system.<br><button id="install_btn">Install</button><button id="config_path_btn">Configure Path</button>` });
+  const gsNotInstalled = mk("div", { innerHTML: `GhostScript not found on your system.<br><button id="install">Install</button><button id="config_path_btn">Configure Path</button>` });
+  Object.assign(gsNotInstalled.style, popupCSS);
   add(gsNotInstalled);
-  on(el("install_btn"), "click", () => {
+  on(el("install"), "click", () => {
     try {
-      cpExec("cd ../.. && cd wizard && node wizard.js");
+      cpExec("node ../../wizard/wizard.js");
+      console.log("Wizard run success.");
     } catch(e) {
       console.error(`Failed to run install wizard: ${e}`);
     }
-  );
+  });
   on(el("config_path_btn"), "click", () => {
-    const modal = mk("dialog", { innerHTML: `Select path to GhostScript files:<button id="c_gp">Choose</button><p id="c_path">No path chosen</p><button id="fin">Finish</button>` });
+    const modal = mk("dialog", { innerHTML: `Select path to GhostScript files:<button id="c_gp">Choose</button><p id="c_path">No path chosen</p><button id="fin">Finish</button><button id="cancel">Cancel</button>` });
     add(modal);
     modal.showModal();
     let chosen = null;
@@ -123,6 +128,10 @@ const genGSNIPopup = () => {
       const jsonConfigFileContent = fsJSONRead(jsonConfigPath);
       jsonConfigFileContent.gs_path = chosen;
       fsJSONWrite(jsonConfigFileContent);
+    });
+    on(el("cancel"), "click", () => {
+      modal.close();
+      rem(modal);
     });
   });
 }

@@ -1,6 +1,10 @@
 # GhostScript
 This is the home of the GhostScript language!
 
+# IMPORTANT
+For those with existing GS installs, PLEASE remove "C:\\Program Files\\GhostScript".\
+GS installs will be moving to "C:\\GhostScript"!
+
 # About
 GhostScript is a free, open-source programming language designed to simplify your scripting experience and handle the hard parts for you.\
 Ghost offers an expansive preprocessor system to deal with dependencies before the script is executed.\

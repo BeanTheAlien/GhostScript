@@ -35,7 +35,7 @@ function walkDir(dir, root = dir) {
 }
 
 async function writeFiles() {
-    const gsPF = "C:\\Program Files\\GhostScript";
+    const gsPF = "C:\\GhostScript";
 
     if(fs.existsSync(gsPF)) {
         console.log("Removing existing installation...");
@@ -68,7 +68,7 @@ async function writeFiles() {
         "gs_use_verbose": true,
         "gs_use_hard_const": true,
         "gs_use_strict": false,
-        "gs_path": "C:\\Program Files\\GhostScript"
+        "gs_path": "C:\\GhostScript"
     }, null, 4));
 
     console.log("Finalizing...");
@@ -80,10 +80,10 @@ async function WritePATH() {
     cp.exec("echo %PATH% > path_backup.txt");
 
     console.log("Writing to PATH...");
-    cp.exec(`setx PATH "%PATH%;C:\\Program Files\\GhostScript"`);
+    cp.exec(`setx PATH "%PATH%;C:\\GhostScript"`);
     cp.exec(`setx PATHEXE "%PATHEXE;.gst"`);
     cp.exec(`assoc .gst=ghostscript`);
-    cp.exec(`ftype ghostscript="C:\\Program Files\\GhostScript\\ghostscript.exe" "%1"`);
+    cp.exec(`ftype ghostscript="C:\\GhostScript\\ghostscript.exe" "%1"`);
     cp.exec(`reg add "HKEY_CLASSES_ROOT\\ghostscript" /ve /d "GhostScript" /f`);
 
     await writeFiles();
