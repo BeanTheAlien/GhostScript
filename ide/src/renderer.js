@@ -383,7 +383,15 @@ function showEditor(filePath) {
   editorArea.value = content;
 }
 async function runDebug() {}
-async function runNormal() {}
+function runNormal() {
+  const gsFiles = fsReadDir("C:\\GhostScript");
+  cpExec(`node ${pathJoin(gsFiles, "src/main.js")}`, (err, stdout, stderr) => {
+    if(err) throw err;
+    if(stderr.length) console.log(stderr);
+    else console.log(stdout);
+  });
+}
+on(rRunNormal, "click", runNormal);
 async function runSafe() {}
 
 console.log(
