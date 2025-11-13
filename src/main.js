@@ -2,6 +2,25 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 
+const [,, ...args] = process.argv;
+function hasFlag(flag) {
+    return args.includes(`--${flag}`);
+}
+function getFlag(flag) {
+    return args.indexOf(`--${flag}`);
+}
+function isIdx(idx) {
+    return idx != -1 && args[idx + 1];
+}
+function getVal(idx) {
+    return args[idx + 1];
+}
+let useFile;
+if(!hasFlag("file")) throw new Error("Failed to execute. (missing parameter: 'file')");
+useFile = getVal(getFlag("file"));
+let useVerbose = hasFlag("verbose");
+let useDebug = hasFlag("debug");
+
 var runtime = {
     modules: {},
     scope: {}
