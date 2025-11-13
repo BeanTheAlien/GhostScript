@@ -383,7 +383,7 @@ function showEditor(filePath) {
   const content = fsRead(filePath);
   editorArea.value = content;
 }
-function runner(flags) {
+function runner(flags = "") {
   console.log(curFile);
   const gsFiles = fsReadDir("C:\\GhostScript");
   cpExec(`node "C:\\GhostScript\\src\\main.js" --file "${curFile}" ${flags}`, (err, stdout, stderr) => {
@@ -397,7 +397,7 @@ function runDebug() {
 }
 on(rRunDebug, "click", runDebug);
 function runNormal() {
-  runner("");
+  runner();
 }
 on(rRunNormal, "click", runNormal);
 function runSafe() {

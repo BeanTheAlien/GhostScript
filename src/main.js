@@ -19,6 +19,7 @@ if(!hasFlag("file")) throw new Error("Failed to execute. (missing parameter: 'fi
 const file = getVal(getFlag("file"));
 const verbose = hasFlag("verbose");
 const debug = hasFlag("debug");
+const safe = hasFlag("safe");
 
 var runtime = {
     modules: {},
