@@ -15,11 +15,10 @@ function isIdx(idx) {
 function getVal(idx) {
     return args[idx + 1];
 }
-let useFile;
 if(!hasFlag("file")) throw new Error("Failed to execute. (missing parameter: 'file')");
-useFile = getVal(getFlag("file"));
-let useVerbose = hasFlag("verbose");
-let useDebug = hasFlag("debug");
+const file = getVal(getFlag("file"));
+const verbose = hasFlag("verbose");
+const debug = hasFlag("debug");
 
 var runtime = {
     modules: {},
@@ -27,7 +26,6 @@ var runtime = {
 };
 
 async function main() {
-    const file = "../test";
     //const json = fs.readFileSync("grammar.json", "utf8");
     //const grammar = JSON.parse(json);
     const script = fs.readFileSync(`${file}.gst`, "utf8");
