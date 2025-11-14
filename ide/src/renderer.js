@@ -61,7 +61,7 @@ const nbd = (outer, text) => `<li class="dropdown"><a class="dropbtn" href="java
 const file = nbd("File", `<a id="new_file">New File</a><a id="new_folder">New Folder</a><a id="new_proj">New Project</a><a id="open_file">Open File</a><a id="open_folder">Open Folder</a><a id="open_proj">Open Project</a><a id="save">Save</a><a id="save_as">Save As</a>`);
 const edit = nbd("Edit", ``);
 const view = nbd("View", ``);
-const run = nbd("Run", `<a id="run_dbg">Run Debugging</a><a id="run_nm">Run</a><a id="run_safe">Run (Safe)</a>`);
+const run = nbd("Run", `<a id="run_dbg">Run Debugging</a><a id="run_nm">Run</a><a id="run_safe">Run (Safe)</a><a id="run_cust">Run with...</a>`);
 const debug = nbd("Debug", `<a id="debug">Debug</a><a id="find_errs">Find Errors</a><a id="fix">Fix</a>`);
 const terminal = nbd("Terminal", ``);
 const help = nbd("Help", ``);
@@ -70,7 +70,7 @@ const github = nbl("GitHub", "https://github.com/BeanTheAlien/GhostScript");
 ul.innerHTML = [file, edit, view, run, terminal, help, community, github].join("");
 add(ul);
 const [fNewFile, fNewFolder, fNewProj, fOpenFile, fOpenFolder, fOpenProj, fSave, fSaveAs] = ["new_file", "new_folder", "new_proj", "open_file", "open_folder", "open_proj", "save", "save_as"].map(id => el(id));
-const [rRunDebug, rRunNormal, rRunSafe] = ["run_dbg", "run_nm", "run_safe"].map(id => el(id));
+const [rRunDebug, rRunNormal, rRunSafe, rRunCustom] = ["run_dbg", "run_nm", "run_safe", "run_cust"].map(id => el(id));
 const [dDebug, dFindErrs, dFix] = ["debug", "find_errs", "fix"].map(id => el(id));
 var curFile = null;
 const sidebar = mk("div", { id: "sidebar" });
@@ -404,6 +404,10 @@ function runSafe() {
   runner("--safe");
 }
 on(rRunSafe, "click", runSafe);
+function runCustom() {
+  const modal = mk("dialog", { innerHTML: `<div>class="dropdown"><a class="dropbtn" href="javascript:void(0)">${outer}</a><div class="dropdown-content">${text}</div></li><button id="fin">Run</button>` });
+}
+on(rRunCustom, "click", runCustom)
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
