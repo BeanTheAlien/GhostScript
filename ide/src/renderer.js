@@ -207,9 +207,10 @@ function genProj() {
     modal.showModal();
     let next = nextPg(pg(`<h1>GhostScript Project Wizard</h1><br><p>Setting up a new GhostScript project.</p><p>This wizard will guide you through the creation process.</p>`));
     on(next, "click", () => {
-      next = nextPg(pg(`<h1>Step 1</h1><br><p>Please enter a name for your project:</p><input type="text" id="pname" placeholder="Really Cool Name">`));
+      next = nextPg(pg(`<h1>Step 1</h1><br><p>Please enter a name for your project:</p><input type="text" id="pname" placeholder="Really Cool Name"><input type="text" id="desc" placeholder="Description... (optional)">`));
       on(next, "click", () => {
         const projName = el("pname").value;
+        const desc = el("desc").value;
         let dir = null;
         next = nextPg(pg(`<h1>Step 2</h1><br><p>Please choose a directory for your project:</p><button id="c_dir">Choose...</button><p id="dir_out">No directory selected.</p>`));
         on(el("c_dir"), "click", async () => {
@@ -232,7 +233,7 @@ function genProj() {
               fsWrite(pathJoin(pdir, `${projName}.gst`), "");
               console.log(`Wrote '${pdir}\\${projName}' successfully.`);
               console.log(`Writing '${pdir}\\README.md'...`);
-              fsWrite(pathJoin(pdir, "README.md"), `# ${projName}`);
+              fsWrite(pathJoin(pdir, "README.md"), `# ${projName}\n${desc}`);
               console.log(`Wrote '${pdir}\\README.md' successfully.`);
               console.log(`Writing '${pdir}\\project.json'...`);
               fsWrite(pathJoin(pdir, "project.json"), JSON.stringify({
@@ -250,24 +251,25 @@ function genProj() {
               fsMkDir(pathJoin(pdir, "bin"));
               console.log(`Made '${pdir}\\bin' successfully.`);
               console.log(`Writing '${pdir}\\bin\\bin.js'...`);
-              fsWrite(pathJoin(pdir, "bin", "bin.js"), `#!/usr/bin/env node
-              const fs = require("fs");
-              const path = require("path");
-              
-              const [,, cmd, ...args] = process.argv;
-              const commandsDir = path.join(__dirname, "cmds");
-              
-              const commands = Object.fromEntries(
-                  fs.readdirSync(commandsDir)
-                      .map(file => [file.replace(".js", ""), () => require(path.join(commandsDir, file))])
+              fsWrite(pathJoin(pdir, "bin", "bin.js"), 
+`#!/usr/bin/env node
+const fs = require("fs");
+const path = require("path");
+const [,, cmd, ...args] = process.argv;
+const commandsDir = path.join(__dirname, "cmds");
+
+const commands = Object.fromEntries(
+    fs.readdirSync(commandsDir)
+        .map(file => [file.replace(".js", ""), () => require(path.join(commandsDir, file))])
+);
+
+if(commands[cmd]) {
+    const module = commands[cmd]();
+    module.default(args);
+} else {
+    console.log(\`Unknown command: \${cmd}\`);
+}`
               );
-              
-              if(commands[cmd]) {
-                  const module = commands[cmd]();
-                  module.default(args);
-              } else {
-                  console.log(\`Unknown command: \${cmd}\`);
-              }`);
               console.log(`Wrote '${pdir}\\bin\\bin.js' successfully.`);
               console.log(`Making '${pdir}\\bin\\cmds'...`);
               fsMkDir(pathJoin(pdir, "bin", "cmds"));
@@ -434,6 +436,12 @@ function runCustom() {
   });
 }
 on(rRunCustom, "click", runCustom);
+function debug() {}
+on(dDebug, "click", debug);
+function findErrs() {}
+on(dFindErrs, "click", findErrs);
+function fix() {}
+on(dFix, "click", fix);
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
