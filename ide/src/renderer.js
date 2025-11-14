@@ -405,9 +405,35 @@ function runSafe() {
 }
 on(rRunSafe, "click", runSafe);
 function runCustom() {
-  const modal = mk("dialog", { innerHTML: `<div>class="dropdown"><a class="dropbtn" href="javascript:void(0)">${outer}</a><div class="dropdown-content">${text}</div></li><button id="fin">Run</button>` });
+  const modal = mk("dialog", { innerHTML: `<p>Please enter flags in the box below:</p><p id="sflags"></p><input type="text" id="flag_input" list="flag_input" placeholder="Enter flag..."><datalist id="flag_input"><option value="verbose"><option value="debug"><option value="safe"></datalist><button id="add_flag">Add</button><button id="rem_flag">Remove</button><button id="fin">Run</button>` });
+  add(modal);
+  modal.showModal();
+  const selected = el("sflags");
+  const flags = [];
+  const input = el("flag_input");
+  const addBtn = el("add_flag");
+  const finBtn = el("fin");
+  const updCont = () => {
+    const j = flags.join(", ");
+    selected.textContent = j.charAt(0).toUpperCase() + j.slice(1);
+  }
+  on(addBtn, "click", () => {
+    const flag = input.value;
+    if(flags.includes(flag)) return;
+    flags.push(flag);
+    updCont();
+  });
+  on(el("rem_flag"), "click", () => {
+    flags.pop();
+    updCont();
+  });
+  on(finBtn, "click", () => {
+    modal.close();
+    rem(modal);
+    runner(flags.map(f => `--${f}`).join(" "));
+  });
 }
-on(rRunCustom, "click", runCustom)
+on(rRunCustom, "click", runCustom);
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via Vite',
