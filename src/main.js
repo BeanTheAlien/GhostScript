@@ -504,32 +504,40 @@ async function compile(tokens) {
     }
 }
 
-async function getRemoteModule(url) {
-    return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-            let data = "";
-            res.on("data", chunk => data += chunk);
-            res.on("end", () => resolve(data));
-        }).on("error", reject);
-    });
-}
-function createRemoteRequire(baseURL) {
-  return async function(relPath) {
-    const resolvedURL = new URL(relPath, baseURL).href;
-    const code = await fetch(resolvedURL).then(r => r.text());
-    const module = { exports: {} };
-    const wrapped = new Function("module", "exports", "require", code);
-    await wrapped(module, module.exports, createRemoteRequire(resolvedURL));
-    return module.exports;
-  };
+// async function getRemoteModule(url) {
+//     return new Promise((resolve, reject) => {
+//         https.get(url, (res) => {
+//             let data = "";
+//             res.on("data", chunk => data += chunk);
+//             res.on("end", () => resolve(data));
+//         }).on("error", reject);
+//     });
+// }
+// function createRemoteRequire(baseURL) {
+//   return async function(relPath) {
+//     const resolvedURL = new URL(relPath, baseURL).href;
+//     const code = await fetch(resolvedURL).then(r => r.text());
+//     const module = { exports: {} };
+//     const wrapped = new Function("module", "exports", "require", code);
+//     await wrapped(module, module.exports, createRemoteRequire(resolvedURL));
+//     return module.exports;
+//   };
+// }
+async function fetchRaw(url) {
+    try {
+        const res = await fetch(url);
+        const text = await res.text();
+        return text;
+    } catch(e) {
+        console.log(e);
+    }
 }
 async function getModule(name, subname) {
-    const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/refs/heads/main/ghost/modules/${name}/${subname}.js`;
-    const dir = url.split("/").slice(0, -1).join("/");
-    const js = await (await fetch(url)).text();
+    const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${name}/${subname}.js`;
+    const js = await fetchRaw(url);
     const module = { exports: {} };
-    const wrapped = new Function("module", "exports", "require", js);
-    await wrapped(module, module.exports, createRemoteRequire(dir + "/"));
+    const wrapped = new Function(js);
+    await wrapped();
     // try {
     //     const wrapped = new Function("module", "exports", "require", js);
     //     wrapped(module, module.exports, require);
