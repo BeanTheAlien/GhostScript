@@ -43,7 +43,7 @@ const fsJSONRead = window.ide.fsJSONRead;
 const fsJSONWrite = window.ide.fsJSONWrite;
 
 console.log("Checking for GhostScript installation...");
-const isInstalled = fsExists("C:\\GhostScript");
+const isInstalled = fsExists("C:\\GhostScript") ? fsExists(fsJSONRead("C:\\GhostScript\\config.json").gs_path) : false;
 if(isInstalled) console.log("GhostScript install found.");
 else console.log("GhostScript install not found.");
 
@@ -67,7 +67,7 @@ const terminal = nbd("Terminal", ``);
 const help = nbd("Help", ``);
 const community = nbd("Community", ``);
 const github = nbl("GitHub", "https://github.com/BeanTheAlien/GhostScript");
-ul.innerHTML = [file, edit, view, run, terminal, help, community, github].join("");
+ul.innerHTML = [file, edit, view, run, debug, terminal, help, community, github].join("");
 add(ul);
 const [fNewFile, fNewFolder, fNewProj, fOpenFile, fOpenFolder, fOpenProj, fSave, fSaveAs] = ["new_file", "new_folder", "new_proj", "open_file", "open_folder", "open_proj", "save", "save_as"].map(id => el(id));
 const [rRunDebug, rRunNormal, rRunSafe, rRunCustom] = ["run_dbg", "run_nm", "run_safe", "run_cust"].map(id => el(id));
@@ -407,12 +407,13 @@ function runSafe() {
 }
 on(rRunSafe, "click", runSafe);
 function runCustom() {
-  const modal = mk("dialog", { innerHTML: `<p>Please enter flags in the box below:</p><p id="sflags"></p><input type="text" id="flag_input" list="flag_input" placeholder="Enter flag..."><datalist id="flag_input"><option value="verbose"><option value="debug"><option value="safe"></datalist><button id="add_flag">Add</button><button id="rem_flag">Remove</button><button id="fin">Run</button>` });
+  const modal = mk("dialog", { innerHTML: `<p>Please enter flags in the box below:</p><p id="sflags"></p><input type="text" id="flag_input" list="flags" placeholder="Enter flag..."><datalist id="flags"><option value="verbose"><option value="debug"><option value="safe"></datalist><button id="add_flag">Add</button><button id="rem_flag">Remove</button><button id="fin">Run</button>` });
   add(modal);
   modal.showModal();
   const selected = el("sflags");
   const flags = [];
   const input = el("flag_input");
+  const datalist = el("flags");
   const addBtn = el("add_flag");
   const finBtn = el("fin");
   const updCont = () => {
@@ -421,8 +422,9 @@ function runCustom() {
   }
   on(addBtn, "click", () => {
     const flag = input.value;
-    if(flags.includes(flag)) return;
+    if(flags.includes(flag) || !Array.from(datalist.options).some(o => flag == o.value)) return;
     flags.push(flag);
+    input.value = "";
     updCont();
   });
   on(el("rem_flag"), "click", () => {
@@ -436,8 +438,8 @@ function runCustom() {
   });
 }
 on(rRunCustom, "click", runCustom);
-function debug() {}
-on(dDebug, "click", debug);
+function scriptDebug() {}
+on(dDebug, "click", scriptDebug);
 function findErrs() {}
 on(dFindErrs, "click", findErrs);
 function fix() {}
