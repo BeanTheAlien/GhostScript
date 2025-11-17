@@ -25,6 +25,7 @@ var runtime = {
     modules: {},
     scope: {}
 };
+var moduleDev = null;
 
 async function main() {
     //const json = fs.readFileSync("grammar.json", "utf8");
@@ -526,18 +527,33 @@ async function compile(tokens) {
 async function fetchRaw(url) {
     try {
         const res = await fetch(url);
+        if(!res.ok) throw new Error(res.status);
         const text = await res.text();
         return text;
     } catch(e) {
         console.log(e);
     }
 }
+async function fetchModuleDev() {
+    try {
+        const res = await fetch(`https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/dev/module_dev.js`);
+        if(!res.ok) throw new Error(res.status);
+        const module = { exports: {} };
+        const text = await res.text();
+        const wrapped = new Function("require", "exports", text);
+        wrapped(require, module.exports);
+        moduleDev = module.exports;
+    } catch(e) {
+        console.log(e);
+    }
+}
 async function getModule(name, subname) {
+    if(!moduleDev) fetchModuleDev();
     const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${name}/${subname}.js`;
     const js = await fetchRaw(url);
     const module = { exports: {} };
-    const wrapped = new Function("require", "exports", js);
-    await wrapped(require, module.exports);
+    const wrapped = new Function("require", "exports", "module_dev", js);
+    wrapped(require, module.exports, moduleDev);
     // try {
     //     const wrapped = new Function("module", "exports", "require", js);
     //     wrapped(module, module.exports, require);
