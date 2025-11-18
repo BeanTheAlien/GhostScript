@@ -20,10 +20,11 @@ Use the same name for a variable, function and method? Fine. Add spaces or symbo
 Ghost is alive and evolving - its creator, [@BeanTheAlien](https://github.com/BeanTheAlien), keeps pushing updates that expand what a scripting language can do.\
 Got a project? Try GhostScript and see how much simpler coding can feel.
 
-# Version 0.0.7
+# Version 0.0.8
 
 # Downloads
 ## Stable
+ghostscript@v0.0.8 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.8)\
 ghostscript@v0.0.7 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.7)\
 ghostscript@v0.0.6 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.6)
 
@@ -93,7 +94,9 @@ Try running your script - you should see "Hello, World!".
 `run` - Executes a GhostScript file.\
 `snapshot` - Creates a new text file with the contents of the file path provided with the filename and ISO string as the name.\
 `upd` - Updates the GhostScript package.\
-`version` - Prints out the version of the installed GhostScript package.
+`version` - Prints out the version of the installed GhostScript package.\
+`wiz` - Runs the install wizard.\
+`rebuild` - Removes all GhostScript files and re-installs.
 
 # Changelog
 ## 0.0.3
@@ -111,6 +114,10 @@ Try running your script - you should see "Hello, World!".
 - Added variable support (define with `var`).
 - Fixed an error in the stdlib that would cause undefined to not print.
 - Fixed an error in the stdlib that would cause null and undefined to not be different values.
+## 0.0.8
+- Fixed the remote loader. Started implementing better import logic.
+- Added in ide path. Work in progress IDE.
+- Added more commands. (wiz, rebuild)
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~

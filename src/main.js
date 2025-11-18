@@ -10,7 +10,7 @@ function getFlag(flag) {
     return args.indexOf(`--${flag}`);
 }
 function isIdx(idx) {
-    return idx != -1 && args[idx + 1];
+    return 0 <= idx && idx < args.length;
 }
 function getVal(idx) {
     return args[idx + 1];
@@ -175,6 +175,9 @@ async function parser(tokens) {
     while(i < tokens.length) {
         const tk = tokens[i];
         if(tk.id == "keyword" && tk.val == "import") {
+            // const imp = parseImport(tokens, i);
+            // if(!imp.module.length) throw new Error(`Unexpected end of import.`);
+            // if(imp.module[0].id != "id") throw new Error(`Unexpected token '${imp.module[0].val}' (expected 'id').`);
             const modName = tokens[i+1].val;
             const lib = await getModule(modName, modName);
             if(!lib) {
@@ -198,6 +201,7 @@ async function parser(tokens) {
                 const rootName = lib.meta.defroot || modName;
                 runtime.scope[rootName] = lib.exports;
             }
+            // i = imp.next;
             i += 2;
             continue;
         }
@@ -323,6 +327,19 @@ function parseArguments(tokens, i) {
     }
     if(tokens[i]?.id != "rparen") throw new Error("Expected ')'.");
     return { args, next: i + 1 };
+}
+function parseImport(tokens, i) {
+    const module = [];
+    while(i < tokens.length && (tokens[i].id == "id" || tokens[i].id == "dot")) {
+        const tk = tokens[i];
+        if(tk.id == "dot") {
+            i++;
+            continue;
+        }
+        module.push(tk.value);
+        i++;
+    }
+    return { module, next: i + 1 };
 }
 function interp(node) {
     // safety: print debugging for malformed nodes
