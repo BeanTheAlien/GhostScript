@@ -246,9 +246,11 @@ function parseBlock(tokens, i) {
     while(i < tokens.length && depth > 0) {
         const tk = tokens[i];
         if(tk.id == "lbrace") depth++;
-        else if(tk.id == "rbrace" && depth > 1) depth--;
-        body.push(tk);
+        else if(tk.id == "rbrace") depth--;
+        else if(depth > 1) body.push(tk);
+        i++;
     }
+    return { node: { type: "BlockStatement", name, args, body }, next: i + 1 };
 }
 function parseExpr(tokens, i) {
     let { node, next } = parsePrim(tokens, i);
