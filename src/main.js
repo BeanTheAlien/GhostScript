@@ -89,7 +89,7 @@ function tokenize(script) {
             while(/[a-zA-Z0-9_]/.test(script[i])) {
                 val += script[i++];
             }
-            const type = ["var", "import", "if", "else", "while", "return"].includes(val)
+            const type = ["var", "import", "if", "else", "while", "return", "class", "function", "method", "prop"].includes(val)
                 ? "keyword"
                 : "id";
             tokens.push({ id: type, val });
@@ -232,10 +232,23 @@ function parseFunc(tokens, i) {
         i++;
     }
     if(curArg.length) args.push(curArg);
-    return {
-        args,
-        nextI: i
-    };
+    return { args, next: i };
+}
+function parseBlock(tokens, i) {
+    let name = tokens[i+1];
+    i += 2;
+    let { args, next } = parseFunc(tokens, i);
+    i = next;
+    if(tokens[i] && !tokens[i].id == "lbrace") throw new Error(`Unexpected termination of block statement. (got: '${tokens[i]}')`);
+    i++;
+    let body = [];
+    let depth = 1;
+    while(i < tokens.length && depth > 0) {
+        const tk = tokens[i];
+        if(tk.id == "lbrace") depth++;
+        else if(tk.id == "rbrace" && depth > 1) depth--;
+        body.push(tk);
+    }
 }
 function parseExpr(tokens, i) {
     let { node, next } = parsePrim(tokens, i);
