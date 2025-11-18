@@ -548,7 +548,7 @@ async function fetchModuleDev() {
     }
 }
 async function getModule(name, subname) {
-    if(!moduleDev) fetchModuleDev();
+    if(!moduleDev) await fetchModuleDev();
     const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${name}/${subname}.js`;
     const js = await fetchRaw(url);
     const module = { exports: {} };
