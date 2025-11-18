@@ -539,9 +539,9 @@ async function fetchModuleDev() {
         const res = await fetch(`https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/dev/module_dev.js`);
         if(!res.ok) throw new Error(res.status);
         const module = { exports: {} };
-        const text = await res.text();
-        const wrapped = new Function("require", "exports", text);
-        wrapped(require, module.exports);
+        const js = await res.text();
+        const wrapped = new Function("module", "exports", js);
+        wrapped(module, module.exports);
         moduleDev = module.exports;
     } catch(e) {
         console.log(e);
@@ -552,8 +552,8 @@ async function getModule(name, subname) {
     const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${name}/${subname}.js`;
     const js = await fetchRaw(url);
     const module = { exports: {} };
-    const wrapped = new Function("require", "exports", "module_dev", js);
-    wrapped(require, module.exports, moduleDev);
+    const wrapped = new Function("require", "module", "exports", "module_dev", js);
+    wrapped(require, module, module.exports, moduleDev);
     // try {
     //     const wrapped = new Function("module", "exports", "require", js);
     //     wrapped(module, module.exports, require);
