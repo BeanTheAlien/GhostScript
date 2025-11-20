@@ -36,7 +36,7 @@ async function main() {
     const tokens = tokenize(script);
     await parser(tokens);
 }
-main().catch(e => console.log(e));
+main();
 
 async function lexer(grammar, script) {
     const tokens = [];
@@ -235,12 +235,6 @@ function parseFunc(tokens, i) {
     return { args, next: i };
 }
 function parseBlock(tokens, i) {
-    let name = tokens[i+1];
-    i += 2;
-    let { args, next } = parseFunc(tokens, i);
-    i = next;
-    if(tokens[i] && !tokens[i].id == "lbrace") throw new Error(`Unexpected termination of block statement. (got: '${tokens[i]}')`);
-    i++;
     let body = [];
     let depth = 1;
     while(i < tokens.length && depth > 0) {
@@ -250,7 +244,7 @@ function parseBlock(tokens, i) {
         else if(depth > 1) body.push(tk);
         i++;
     }
-    return { node: { type: "BlockStatement", name, args, body }, next: i + 1 };
+    return { node: { type: "BlockStatement", val: body }, next: i + 1 };
 }
 function parseExpr(tokens, i) {
     let { node, next } = parsePrim(tokens, i);
@@ -309,6 +303,7 @@ function parseArr(tokens, i) {
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
+    console.log(token);
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "lparen") {
@@ -329,6 +324,10 @@ function parsePrim(tokens, i) {
     if(token.id == "lbracket") {
         const arr = parseArr(tokens, i);
         return { node: arr.node, next: arr.next };
+    }
+    if(token.id == "lbrace") {
+        const block = parseBlock(tokens, i);
+        return { node: block.node, next: block.next + 1 };
     }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
