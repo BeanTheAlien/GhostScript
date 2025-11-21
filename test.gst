@@ -1,3 +1,3 @@
 import ghost
-var hello = [123]
+var hello = ["hello", 123]
 print(hello)

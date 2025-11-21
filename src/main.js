@@ -444,11 +444,11 @@ function interp(node) {
         case "Assignment":
             const nm = node.val[0];
             const vl = node.val[1];
-            runtime.scope[nm] = vl.val;
+            runtime.scope[nm] = interp(vl);
             break;
         
         case "ArrayExpression":
-            return node.val.map(n => n.val);
+            return node.val.map(v => interp(v));
 
         default:
             console.error("interp: unknown node:", node);
