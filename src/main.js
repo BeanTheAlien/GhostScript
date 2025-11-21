@@ -585,8 +585,8 @@ async function getModule(name, subname) {
     const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${name}/${subname}.js`;
     const js = await fetchRaw(url);
     const module = { exports: {} };
-    const wrapped = new Function("require", "module", "exports", "module_dev", js);
-    wrapped(require, module, module.exports, moduleDev);
+    const wrapped = new Function("require", "module", "exports", "module_dev", "runtime", js);
+    wrapped(require, module, module.exports, moduleDev, runtime);
     // try {
     //     const wrapped = new Function("module", "exports", "require", js);
     //     wrapped(module, module.exports, require);
