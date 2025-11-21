@@ -239,12 +239,17 @@ function parseBlock(tokens, i) {
     let depth = 1;
     while(i < tokens.length && depth > 0) {
         const tk = tokens[i];
+        // go into another block statement
         if(tk.id == "lbrace") depth++;
+        // move up a level
+        // wont push ending right brace
         else if(tk.id == "rbrace") depth--;
-        else if(depth > 1) body.push(tk);
+        if(depth > 1) body.push(tk);
         i++;
     }
-    return { node: { type: "BlockStatement", val: body }, next: i + 1 };
+    // Handle unterminated block statements
+    if(depth > 0) throw new Error("Unterminated block statement. (expected '}')");
+    return { node: { type: "BlockStatement", val: body }, next: i };
 }
 function parseExpr(tokens, i) {
     let { node, next } = parsePrim(tokens, i);
@@ -326,7 +331,7 @@ function parsePrim(tokens, i) {
     }
     if(token.id == "lbrace") {
         const block = parseBlock(tokens, i);
-        return { node: block.node, next: block.next + 1 };
+        return { node: block.node, next: block.next };
     }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
@@ -352,7 +357,7 @@ function parseImport(tokens, i) {
         module.push(tk.value);
         i++;
     }
-    return { module, next: i + 1 };
+    return { module, next: i };
 }
 function interp(node) {
     // safety: print debugging for malformed nodes
