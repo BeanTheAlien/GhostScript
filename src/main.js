@@ -15,8 +15,8 @@ function isIdx(idx) {
 function getVal(idx) {
     return args[idx + 1];
 }
-if(!hasFlag("file")) throw new Error("Failed to execute. (missing parameter: 'file')");
-const file = getVal(getFlag("file"));
+if(!hasFlag("file") && !hasFlag("test")) throw new Error("Failed to execute. (missing parameter: 'file')");
+const file = hasFlag("test") ? "../test" : getVal(getFlag("file"));
 const verbose = hasFlag("verbose");
 const debug = hasFlag("debug");
 const safe = hasFlag("safe");
@@ -278,7 +278,6 @@ function parseArr(tokens, i) {
     }
     while(idx < tokens.length) {
         const expr = parsePrim(tokens, idx);
-        console.log(expr);
         els.push(expr.node);
         idx = expr.next;
         // if next token is comma, consume and continue
@@ -303,9 +302,9 @@ function parseArr(tokens, i) {
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
-    console.log(token);
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
+    if(token.id == "num") return { node: { type: "Literal", val: Number(token.val) }, next: i + 1 };
     if(token.id == "lparen") {
         const expr = parseExpr(tokens, i + 1);
         if(tokens[expr.next].id != "rparen") throw new Error("Expected ')'.");
@@ -316,8 +315,8 @@ function parsePrim(tokens, i) {
         if(tokens[i+2] && tokens[i+2].id == "eqls") {
             //if(tokens[i+2].id != "eqls") throw new Error("Expected '='.");
             //if(!tokens[i+3]) throw new Error(`Missing assignment value of '${name}'.`);
-            const val = tokens[i+3];
-            return { node: { type: "Assignment", val: [name, val] }, next: i + 4 };
+            const expr = parseExpr(tokens, i + 3);
+            return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
         }
         return { node: { type: "Declaration", val: name }, next: i + 2 };
     }
@@ -447,6 +446,9 @@ function interp(node) {
             const vl = node.val[1];
             runtime.scope[nm] = vl.val;
             break;
+        
+        case "ArrayExpression":
+            return node.val.map(n => n.val);
 
         default:
             console.error("interp: unknown node:", node);
