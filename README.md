@@ -118,6 +118,10 @@ Try running your script - you should see "Hello, World!".
 - Fixed the remote loader. Started implementing better import logic.
 - Added in ide path. Work in progress IDE.
 - Added more commands. (wiz, rebuild)
+## 0.0.9
+- Added array support.
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~
+- Block statement parsing.
+- Better import logic.
