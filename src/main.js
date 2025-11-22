@@ -237,18 +237,21 @@ function parseFunc(tokens, i) {
 function parseBlock(tokens, i) {
     let body = [];
     let depth = 1;
+    // skip opening brace
+    i++;
     while(i < tokens.length && depth > 0) {
         const tk = tokens[i];
         // go into another block statement
         if(tk.id == "lbrace") depth++;
         // move up a level
-        // wont push ending right brace
         else if(tk.id == "rbrace") depth--;
-        if(depth > 1) body.push(tk);
+        body.push(tk);
         i++;
     }
     // Handle unterminated block statements
     if(depth > 0) throw new Error("Unterminated block statement. (expected '}')");
+    // remove ending right brace
+    body.splice(body.length - 1, 1);
     return { node: { type: "BlockStatement", val: body }, next: i };
 }
 function parseExpr(tokens, i) {
@@ -331,7 +334,8 @@ function parsePrim(tokens, i) {
     }
     if(token.id == "lbrace") {
         const block = parseBlock(tokens, i);
-        return { node: block.node, next: block.next };
+        const m = block.node.val.map(b => parsePrim(tokens, block.next));
+        return { node: { type: "BlockStatement", val: m }, next: m[m.length - 1].next };
     }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
@@ -361,7 +365,7 @@ function parseImport(tokens, i) {
 }
 function interp(node) {
     // safety: print debugging for malformed nodes
-    if (!node || typeof node !== "object") {
+    if(!node || typeof node != "object") {
         console.error("interp got a non-node:", node);
         throw new Error("interp received invalid AST node");
     }
@@ -454,6 +458,9 @@ function interp(node) {
         
         case "ArrayExpression":
             return node.val.map(v => interp(v));
+        
+        case "BlockStatement":
+            node.val.forEach(v => interp(v));
 
         default:
             console.error("interp: unknown node:", node);
