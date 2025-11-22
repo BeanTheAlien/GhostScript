@@ -252,7 +252,14 @@ function parseBlock(tokens, i) {
     if(depth > 0) throw new Error("Unterminated block statement. (expected '}')");
     // remove ending right brace
     body.splice(body.length - 1, 1);
-    return { node: { type: "BlockStatement", val: body }, next: i };
+    let parsedBody = [];
+    let j = 0;
+    while(j < body.length) {
+        const parsed = parseExpr(body, j);
+        parsedBody.push(parsed.node);
+        j = parsed.next;
+    }
+    return { node: { type: "BlockStatement", val: parsedBody }, next: i };
 }
 function parseExpr(tokens, i) {
     let { node, next } = parsePrim(tokens, i);
@@ -334,8 +341,7 @@ function parsePrim(tokens, i) {
     }
     if(token.id == "lbrace") {
         const block = parseBlock(tokens, i);
-        const m = block.node.val.map(b => parsePrim(tokens, block.next));
-        return { node: { type: "BlockStatement", val: m }, next: m[m.length - 1].next };
+        return { node: block.node, next: block.next };
     }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
@@ -461,6 +467,7 @@ function interp(node) {
         
         case "BlockStatement":
             node.val.forEach(v => interp(v));
+            break;
 
         default:
             console.error("interp: unknown node:", node);

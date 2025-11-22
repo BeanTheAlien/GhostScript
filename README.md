@@ -120,6 +120,7 @@ Try running your script - you should see "Hello, World!".
 - Added more commands. (wiz, rebuild)
 ## 0.0.9
 - Added array support.
+- Updated block parsing. Supports primitive parsing using '{' and '}'. (22/11/2025)
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~

@@ -1,6 +1,6 @@
 import ghost
 var hello = ["hello", 123]
 {
-    print("hello, world")
+    println("hello, world")
 }
 print(hello)
