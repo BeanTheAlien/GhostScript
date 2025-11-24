@@ -89,7 +89,7 @@ function tokenize(script) {
             while(/[a-zA-Z0-9_]/.test(script[i])) {
                 val += script[i++];
             }
-            const type = ["var", "import", "if", "else", "while", "return", "class", "function", "method", "prop"].includes(val)
+            const type = ["var", "import", "if", "else", "while", "return", "class", "function", "method", "prop", "desire"].includes(val)
                 ? "keyword"
                 : "id";
             tokens.push({ id: type, val });
@@ -260,6 +260,44 @@ function parseBlock(tokens, i) {
         j = parsed.next;
     }
     return { node: { type: "BlockStatement", val: parsedBody }, next: i };
+}
+function parseBlockHeader(tokens, i) {
+    // modifiers for the header (desire, type, usw)
+    const headerMods = parseMods(tokens, i);
+    i = headerMods.next;
+    const mods = headerMods.mods;
+    // header (if, function, usw)
+    const header = tokens[i].val;
+    // block declarations
+    if(["function", "method", "prop", "class"].includes(header)) {
+        // if its a function or method, parse params
+        const headerParams = [];
+        i++;
+        const headerName = tokens[i];
+        if(header == "function" || header == "method") {
+            // skip lparen
+            i++;
+            while(i < tokens.length && tokens[i+1].id != "rparen") {
+                // proccess params
+                let arg = [];
+                while(tokens[i].id != "comma") {
+                    arg.push(tokens[i].val);
+                    i++;
+                }
+                headerParams.push(arg);
+            }
+        }
+        return { node: { type: "BlockDeclaration", val: { type: header, mods, name: headerName, params: headerParams } }, next: i };
+    }
+}
+function parseMods(tokens, i) {
+    let mods = [];
+    while(i < tokens.length) {
+        if(tokens[i].id != "keyword") break;
+        mods.push(tokens[i]);
+        i++;
+    }
+    return { mods, next: i + 1 };
 }
 function parseExpr(tokens, i) {
     let { node, next } = parsePrim(tokens, i);
