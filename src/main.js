@@ -317,9 +317,29 @@ function parseArr(tokens, i) {
 }
 function parseMath(tokens, i) {
     let n = 0;
+    // if the first value isnt a number, then its not an equation
+    if(tokens[i].id != "num") throw new Error(`Non-equation found. (got '${tokens[i].id}')`);
     while(i < tokens.length) {
-        //
+        let lhs = tokens[i];
+        // if there is an operator after lhs, continue solving
+        // else we can break early (it is solved already)
+        if(tokens[i+1] && tokens[i+1].id == "opr") {
+            let opr = tokens[i+1];
+            // assuming an operator is found, it requires rhs
+            if(!tokens[i+2] || tokens[i+2].id != "num") throw new Error("Invalid right-hand side found.");
+            let rhs = tokens[i+2];
+            switch(opr.val) {
+                case "+": n += lhs + rhs; break;
+                case "-": n += lhs - rhs; break;
+                case "*": n += lhs * rhs; break;
+                case "/": n += lhs / rhs; break;
+                case "%": n += lhs % rhs; break;
+            }
+        }
+        else break;
+        i++;
     }
+    return { node: { type: "Literal", val: n }, next: i + 1 };
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
