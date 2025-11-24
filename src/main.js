@@ -315,6 +315,12 @@ function parseArr(tokens, i) {
     }
     throw new Error("Unterminated array literal (missing ']').");
 }
+function parseMath(tokens, i) {
+    let n = 0;
+    while(i < tokens.length) {
+        //
+    }
+}
 function parsePrim(tokens, i) {
     const token = tokens[i];
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
