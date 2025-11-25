@@ -16,8 +16,8 @@
     "type": "git",
     "url": "git+https://github.com/BeanTheAlien/GhostScript.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["indie", "language"],
+  "author": "BeanTheAlien",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {

@@ -399,6 +399,11 @@ function parsePrim(tokens, i) {
         }
         return { node: { type: "Declaration", val: name }, next: i + 2 };
     }
+    if(token.id == "keyword" && token.val == "function") {
+        const funcHeader = parseBlockHeader(tokens, i);
+        const funcBody = parseBlock(tokens, funcHeader.next);
+        return { node: { type: "FunctionDeclaration", val: [funcHeader, funcBody] }, next: funcBody.next };
+    }
     if(token.id == "lbracket") {
         const arr = parseArr(tokens, i);
         return { node: arr.node, next: arr.next };
@@ -531,6 +536,10 @@ function interp(node) {
         
         case "BlockStatement":
             node.val.forEach(v => interp(v));
+            break;
+        
+        case "FunctionDeclaration":
+            const { type, mods, name, params } = node.val[0];
             break;
 
         default:
