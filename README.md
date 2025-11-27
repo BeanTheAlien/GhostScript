@@ -3,7 +3,10 @@ This is the home of the GhostScript language!
 
 # IMPORTANT
 For those with existing GS installs, PLEASE remove "C:\\Program Files\\GhostScript".\
-GS installs will be moving to "C:\\GhostScript"!
+GS installs will be moving to "C:\\GhostScript"!\
+Note that GhostScript **is not development ready**.\
+If you want to use GS in a development environment, please come back when v1.0.0 is released.\
+I apologize for the inconvenience.
 
 # About
 GhostScript is a free, open-source programming language designed to simplify your scripting experience and handle the hard parts for you.\
@@ -20,10 +23,11 @@ Use the same name for a variable, function and method? Fine. Add spaces or symbo
 Ghost is alive and evolving - its creator, [@BeanTheAlien](https://github.com/BeanTheAlien), keeps pushing updates that expand what a scripting language can do.\
 Got a project? Try GhostScript and see how much simpler coding can feel.
 
-# Version 0.0.8
+# Version 0.0.9
 
 # Downloads
 ## Stable
+ghostscript@v0.0.9 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.9)\
 ghostscript@v0.0.8 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.8)\
 ghostscript@v0.0.7 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.7)\
 ghostscript@v0.0.6 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.6)
