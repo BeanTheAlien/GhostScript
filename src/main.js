@@ -89,9 +89,13 @@ function tokenize(script) {
             while(/[a-zA-Z0-9_]/.test(script[i])) {
                 val += script[i++];
             }
-            const type = ["var", "import", "if", "else", "while", "return", "class", "function", "method", "prop", "desire"].includes(val)
-                ? "keyword"
-                : "id";
+            const keywords = [
+                "var", "import", "if", "else", "while", "return", "class", "function", "method", "prop"
+            ];
+            const mods = [
+                "desire"
+            ];
+            const type = keywords.includes(val) ? "keyword" : mods.includes(val) ? "mod" : "id";
             tokens.push({ id: type, val });
             continue;
         }
@@ -241,17 +245,27 @@ function parseBlock(tokens, i) {
     i++;
     while(i < tokens.length && depth > 0) {
         const tk = tokens[i];
-        // go into another block statement
-        if(tk.id == "lbrace") depth++;
-        // move up a level
-        else if(tk.id == "rbrace") depth--;
-        body.push(tk);
+        console.log(tk.val);
+        if(tk.id == "lbrace") {
+            // go into another block statement
+            depth++;
+            if(depth > 1) body.push(tk);
+        } else if(tk.id == "rbrace") {
+            // move up a level
+            depth--;
+            if(depth > 1) body.push(tk);
+            else break;
+        } else {
+            body.push(tk);
+        }
         i++;
+        console.log(depth);
     }
+    console.log(body);
+    console.log(depth);
     // Handle unterminated block statements
     if(depth > 0) throw new Error("Unterminated block statement. (expected '}')");
     // remove ending right brace
-    body.splice(body.length - 1, 1);
     let parsedBody = [];
     let j = 0;
     while(j < body.length) {
@@ -270,34 +284,41 @@ function parseBlockHeader(tokens, i) {
     const header = tokens[i].val;
     // block declarations
     if(["function", "method", "prop", "class"].includes(header)) {
+        // get header name
+        i++;
+        const headerName = tokens[i].val;
         // if its a function or method, parse params
         const headerParams = [];
-        i++;
-        const headerName = tokens[i];
         if(header == "function" || header == "method") {
             // skip lparen
-            i++;
-            while(i < tokens.length && tokens[i+1].id != "rparen") {
+            i += 2;
+            console.log(tokens[i].val);
+            let curArg = [];
+            while(i < tokens.length && tokens[i].id != "rparen") {
                 // proccess params
-                let arg = [];
-                while(tokens[i].id != "comma") {
-                    arg.push(tokens[i].val);
+                if(tokens[i].id == "comma") {
+                    headerParams.push(curArg);
+                    curArg = [];
                     i++;
+                    continue;
                 }
-                headerParams.push(arg);
+                curArg.push(tokens[i].val);
+                i++;
             }
+            if(curArg.length) headerParams.push(curArg);
+            console.log(headerParams);
         }
-        return { node: { type: "BlockDeclaration", val: { type: header, mods, name: headerName, params: headerParams } }, next: i };
+        return { node: { type: "BlockDeclaration", val: { type: header, mods, name: headerName, params: headerParams } }, next: i + 1 };
     }
+    throw new Error(`Unknown block header '${header}'.`);
 }
 function parseMods(tokens, i) {
     let mods = [];
-    while(i < tokens.length) {
-        if(tokens[i].id != "keyword") break;
-        mods.push(tokens[i]);
+    while(i < tokens.length && tokens[i].id == "mod") {
+        mods.push(tokens[i].val);
         i++;
     }
-    return { mods, next: i + 1 };
+    return { mods, next: i };
 }
 function parseExpr(tokens, i) {
     let { node, next } = parsePrim(tokens, i);
@@ -402,7 +423,7 @@ function parsePrim(tokens, i) {
     if(token.id == "keyword" && token.val == "function") {
         const funcHeader = parseBlockHeader(tokens, i);
         const funcBody = parseBlock(tokens, funcHeader.next);
-        return { node: { type: "FunctionDeclaration", val: [funcHeader, funcBody] }, next: funcBody.next };
+        return { node: { type: "FunctionDeclaration", val: [funcHeader, funcBody] }, next: funcBody.next + 1 };
     }
     if(token.id == "lbracket") {
         const arr = parseArr(tokens, i);
@@ -445,7 +466,7 @@ function interp(node) {
         throw new Error("interp received invalid AST node");
     }
 
-    switch (node.type) {
+    switch(node.type) {
         case "Literal":
             return node.val;
 
@@ -540,6 +561,25 @@ function interp(node) {
         
         case "FunctionDeclaration":
             const { type, mods, name, params } = node.val[0];
+            const body = node.val[1];
+            //gsFuncDesire: boolean, gsFuncType: GSType, gsFuncName: string, gsFuncArgs: GSArg[], gsFuncBody: function
+            //gsArgName: string, gsArgVal: Object, gsArgDesire: boolean, gsArgType: GSType
+            const gsf = new moduleDev.GSFunc({
+                gsFuncDesire: (mods ?? []).includes("desire"),
+                gsFuncType: runtime.modules.ghost.entity,
+                gsFuncName: name,
+                gsFuncArgs: (params ?? []).map(p => new moduleDev.GSArg({
+                    gsArgName: p,
+                    gsArgVal: "",
+                    gsArgDesire: false,
+                    gsArgType: runtime.modules.ghost.entity
+                })),
+                gsFuncBody: async (p) => {
+                    await parser(body);
+                }
+            });
+            console.log(gsf);
+            runtime.scope[name] = gsf;
             break;
 
         default:

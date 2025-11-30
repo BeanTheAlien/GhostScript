@@ -1,6 +1,5 @@
 import ghost
-var hello = ["hello", 123]
-{
+function hello() {
     println("hello, world")
 }
-print(hello)
+hello()
