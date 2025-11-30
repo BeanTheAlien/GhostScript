@@ -245,7 +245,6 @@ function parseBlock(tokens, i) {
     i++;
     while(i < tokens.length && depth > 0) {
         const tk = tokens[i];
-        console.log(tk.val);
         if(tk.id == "lbrace") {
             // go into another block statement
             depth++;
@@ -259,10 +258,7 @@ function parseBlock(tokens, i) {
             body.push(tk);
         }
         i++;
-        console.log(depth);
     }
-    console.log(body);
-    console.log(depth);
     // Handle unterminated block statements
     if(depth > 0) throw new Error("Unterminated block statement. (expected '}')");
     // remove ending right brace
@@ -292,7 +288,6 @@ function parseBlockHeader(tokens, i) {
         if(header == "function" || header == "method") {
             // skip lparen
             i += 2;
-            console.log(tokens[i].val);
             let curArg = [];
             while(i < tokens.length && tokens[i].id != "rparen") {
                 // proccess params
@@ -306,7 +301,6 @@ function parseBlockHeader(tokens, i) {
                 i++;
             }
             if(curArg.length) headerParams.push(curArg);
-            console.log(headerParams);
         }
         return { node: { type: "BlockDeclaration", val: { type: header, mods, name: headerName, params: headerParams } }, next: i + 1 };
     }
@@ -422,8 +416,10 @@ function parsePrim(tokens, i) {
     }
     if(token.id == "keyword" && token.val == "function") {
         const funcHeader = parseBlockHeader(tokens, i);
+        const header = funcHeader.node.val;
         const funcBody = parseBlock(tokens, funcHeader.next);
-        return { node: { type: "FunctionDeclaration", val: [funcHeader, funcBody] }, next: funcBody.next + 1 };
+        console.log(header);
+        return { node: { type: "FunctionDeclaration", val: [header, funcBody] }, next: funcBody.next + 1 };
     }
     if(token.id == "lbracket") {
         const arr = parseArr(tokens, i);
@@ -564,18 +560,19 @@ function interp(node) {
             const body = node.val[1];
             //gsFuncDesire: boolean, gsFuncType: GSType, gsFuncName: string, gsFuncArgs: GSArg[], gsFuncBody: function
             //gsArgName: string, gsArgVal: Object, gsArgDesire: boolean, gsArgType: GSType
+            console.log(runtime.modules);
             const gsf = new moduleDev.GSFunc({
-                gsFuncDesire: (mods ?? []).includes("desire"),
-                gsFuncType: runtime.modules.ghost.entity,
+                gsFuncDesire: mods.includes("desire"),
+                gsFuncType: runtime.modules.ghost.exports.entity,
                 gsFuncName: name,
-                gsFuncArgs: (params ?? []).map(p => new moduleDev.GSArg({
+                gsFuncArgs: params.map(p => new moduleDev.GSArg({
                     gsArgName: p,
                     gsArgVal: "",
                     gsArgDesire: false,
-                    gsArgType: runtime.modules.ghost.entity
+                    gsArgType: runtime.modules.ghost.exports.entity
                 })),
-                gsFuncBody: async (p) => {
-                    await parser(body);
+                gsFuncBody: (p) => {
+                    body.forEach(n => interp(n));
                 }
             });
             console.log(gsf);
