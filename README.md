@@ -126,6 +126,7 @@ Try running your script - you should see "Hello, World!".
 - Added array support.
 - Updated block parsing. Supports primitive parsing using '{' and '}'. (22/11/2025)
 - Began adding function support. (29/11/2025)
+- Continued development to add function support. (30/11/2025)
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~
