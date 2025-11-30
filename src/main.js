@@ -418,7 +418,6 @@ function parsePrim(tokens, i) {
         const funcHeader = parseBlockHeader(tokens, i);
         const header = funcHeader.node.val;
         const funcBody = parseBlock(tokens, funcHeader.next);
-        console.log(header);
         return { node: { type: "FunctionDeclaration", val: [header, funcBody] }, next: funcBody.next + 1 };
     }
     if(token.id == "lbracket") {
@@ -557,10 +556,10 @@ function interp(node) {
         
         case "FunctionDeclaration":
             const { type, mods, name, params } = node.val[0];
-            const body = node.val[1];
+            const bodyNode = node.val[1];
+            const body = bodyNode.node.val;
             //gsFuncDesire: boolean, gsFuncType: GSType, gsFuncName: string, gsFuncArgs: GSArg[], gsFuncBody: function
             //gsArgName: string, gsArgVal: Object, gsArgDesire: boolean, gsArgType: GSType
-            console.log(runtime.modules);
             const gsf = new moduleDev.GSFunc({
                 gsFuncDesire: mods.includes("desire"),
                 gsFuncType: runtime.modules.ghost.exports.entity,
@@ -575,10 +574,9 @@ function interp(node) {
                     body.forEach(n => interp(n));
                 }
             });
-            console.log(gsf);
             runtime.scope[name] = gsf;
             break;
-
+        
         default:
             console.error("interp: unknown node:", node);
             throw new Error(`Unknown node with type '${node.type}'.`);

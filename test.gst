@@ -1,4 +1,3 @@
 import ghost
-function hello() {
-    println("hello, world")
-}
+function hello() {}
+hello()
