@@ -68,8 +68,16 @@ function tokenize(script) {
             i++;
             continue;
         }
+        // line comments
         if(char == "/" && script[i + 1] == "/") {
             while(script[i] != "\n") i++;
+            continue;
+        }
+        // block comments
+        if(char == "/" && script[i + 1] == "*") {
+            i++;
+            while(script[i] != "*") i++;
+            i++;
             continue;
         }
 
@@ -466,16 +474,17 @@ function interp(node) {
             return node.val;
 
         case "Identifier":
-            // return actual runtime binding if present, otherwise the name (so callers can decide)
+            // return actual runtime binding if present
             if(Object.hasOwn(runtime.scope, node.val)) return runtime.scope[node.val];
-            return node.val;
+            // if it doesnt exist, return `undefined`
+            return undefined;
 
         case "MemberExpression": {
             // Evaluate left side (the object)
             const obj = interp(node.object);
             // property node is usually { type: 'Identifier', val: 'propName' }
             const propName = (node.prop && (node.prop.val || node.prop.name)) || (node.property && (node.property.val || node.property.name));
-            if (obj == null) {
+            if(obj == null) {
                 console.error("MemberExpression: target is null/undefined", node);
                 throw new Error("Cannot access property of null/undefined");
             }
