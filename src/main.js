@@ -759,10 +759,10 @@ async function getModuleStructure() {
     request.addEventListener("load", () => {
         if(request.status == 200) {
             const data = JSON.parse(request.response);
-            return data;
+            console.log(data);
+            // fs.writeFileSync("module_structure.json", data);
         } else {
             console.error(`Error fetching module structure: ${request.status}, ${request.statusText}`);
-            return null;
         }
     });
     request.addEventListener("error", () => {
