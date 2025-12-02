@@ -402,6 +402,17 @@ function parseMath(tokens, i) {
     }
     return { node: { type: "Literal", val: n }, next: i + 1 };
 }
+function parseArrAccess(tokens, i) {
+    let poses = [];
+    // skip opening lbracket
+    i++;
+    while(tokens < i && (tokens[i].id == "num" || tokens[i].id == "comma")) {
+        if(tokens[i].id == "num") poses.push(tokens[i].val);
+        if(tokens[i].id == "rbracket") return { poses, next: i + 1 };
+        i++;
+    }
+    throw new Error("Unterminated array index. Expected ']'.");
+}
 function parsePrim(tokens, i) {
     const token = tokens[i];
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
@@ -411,9 +422,6 @@ function parsePrim(tokens, i) {
         console.log(expr);
         return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
     }
-    if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
-    if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
-    if(token.id == "num") return { node: { type: "Literal", val: Number(token.val) }, next: i + 1 };
     if(token.id == "lparen") {
         const expr = parseExpr(tokens, i + 1);
         if(tokens[expr.next].id != "rparen") throw new Error("Expected ')'.");
@@ -435,6 +443,13 @@ function parsePrim(tokens, i) {
         const funcBody = parseBlock(tokens, funcHeader.next);
         return { node: { type: "FunctionDeclaration", val: [header, funcBody] }, next: funcBody.next + 1 };
     }
+    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "lbracket") {
+        const access = parseArrAccess(tokens, i);
+        return { node: { type: "ArrayAccess", val: [token.val, access.poses] }, next: access.next };
+    }
+    if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
+    if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
+    if(token.id == "num") return { node: { type: "Literal", val: Number(token.val) }, next: i + 1 };
     if(token.id == "lbracket") {
         const arr = parseArr(tokens, i);
         return { node: arr.node, next: arr.next };
@@ -592,6 +607,17 @@ function interp(node) {
             });
             runtime.scope[name] = gsf;
             break;
+        
+        case "ArrayAccess":
+            const [arr, poses] = node.val;
+            let els = [];
+            if(!Object.hasOwn(runtime.scope, arr)) throw new Error("Cannot index undefined.");
+            if(!Array.isArray(arr)) {
+                console.warn(`Warning: attempting to index non-array '${arr}'.`);
+                const string = JSON.stringify(arr);
+                for(let i = 0; i < poses.length; i++) els.push(string[poses[i]]);
+            } else for(let i = 0; i < poses.length; i++) els.push(arr[poses[i]]);
+            return els;
         
         default:
             console.error("interp: unknown node:", node);
