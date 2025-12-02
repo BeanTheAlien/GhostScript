@@ -436,6 +436,13 @@ function parsePrim(tokens, i) {
         const block = parseBlock(tokens, i);
         return { node: block.node, next: block.next };
     }
+    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
+        const name = token.val;
+        const expr = parseExpr(tokens, i+2);
+        console.log(name);
+        console.log(expr);
+        return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
+    }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
 function parseArguments(tokens, i) {

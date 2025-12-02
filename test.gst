@@ -1,6 +1,5 @@
 import ghost
-function hello() {
-    var helloworld = "Hello, World!"
-}
-
-print(helloworld)
+var h = 42
+println(h)
+h = 21
+println(h)
