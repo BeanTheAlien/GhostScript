@@ -129,6 +129,7 @@ Try running your script - you should see "Hello, World!".
 - Continued development to add function support. (30/11/2025)
 - Added function support. (30/11/2025)
 - MAJOR: updated variable logic to properly print `undefined`, should a variable not exist, instead of printing the name. (01/12/2025)
+- Implemented array access. You can retrieve multiple elements by seperating indexes to be retrieved by a comma.
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~

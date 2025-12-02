@@ -749,6 +749,26 @@ async function fetchModuleDev() {
         console.log(e);
     }
 }
+async function getModuleStructure() {
+    const owner = "BeanTheAlien";
+    const repo = "BeanTheAlien.github.io";
+    const path = "ghost/modules";
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+    const request = new XMLHttpRequest();
+    request.open("GET", url);
+    request.addEventListener("load", () => {
+        if(request.status == 200) {
+            const data = JSON.parse(request.response);
+            return data;
+        } else {
+            console.error(`Error fetching module structure: ${request.status}, ${request.statusText}`);
+            return null;
+        }
+    });
+    request.addEventListener("error", () => {
+        console.error("Network error occured");
+    });
+}
 async function getModule(name, subname) {
     if(!moduleDev) await fetchModuleDev();
     const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${name}/${subname}.js`;
