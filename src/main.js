@@ -404,6 +404,13 @@ function parseMath(tokens, i) {
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
+    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
+        const name = token.val;
+        const expr = parseExpr(tokens, i+2);
+        console.log(name);
+        console.log(expr);
+        return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
+    }
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "num") return { node: { type: "Literal", val: Number(token.val) }, next: i + 1 };
@@ -435,13 +442,6 @@ function parsePrim(tokens, i) {
     if(token.id == "lbrace") {
         const block = parseBlock(tokens, i);
         return { node: block.node, next: block.next };
-    }
-    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
-        const name = token.val;
-        const expr = parseExpr(tokens, i+2);
-        console.log(name);
-        console.log(expr);
-        return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
     }
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
