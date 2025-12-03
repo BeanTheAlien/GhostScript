@@ -1,5 +1,4 @@
 import ghost
-var h = 42
-println(h)
-h = 21
-println(h)
+var h = [1, 2, 3]
+var j = h[0, 1, 4]
+println(j)

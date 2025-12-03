@@ -405,10 +405,11 @@ function parseMath(tokens, i) {
 function parseArrAccess(tokens, i) {
     let poses = [];
     // skip opening lbracket
-    i++;
-    while(tokens < i && (tokens[i].id == "num" || tokens[i].id == "comma")) {
-        if(tokens[i].id == "num") poses.push(tokens[i].val);
-        if(tokens[i].id == "rbracket") return { poses, next: i + 1 };
+    i += 2;
+    while(i < tokens.length) {
+        const tk = tokens[i];
+        if(tk && tk.id == "num") poses.push(tk.val);
+        if(tk && tk.id == "rbracket") return { poses, next: i + 1 };
         i++;
     }
     throw new Error("Unterminated array index. Expected ']'.");
@@ -418,8 +419,6 @@ function parsePrim(tokens, i) {
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
         const name = token.val;
         const expr = parseExpr(tokens, i+2);
-        console.log(name);
-        console.log(expr);
         return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
     }
     if(token.id == "lparen") {
@@ -612,11 +611,12 @@ function interp(node) {
             const [arr, poses] = node.val;
             let els = [];
             if(!Object.hasOwn(runtime.scope, arr)) throw new Error("Cannot index undefined.");
-            if(!Array.isArray(arr)) {
-                console.warn(`Warning: attempting to index non-array '${arr}'.`);
-                const string = JSON.stringify(arr);
+            const entry = runtime.scope[arr];
+            if(!Array.isArray(entry)) {
+                console.warn(`Warning: attempting to index non-array '${arr}'. (content: ${JSON.stringify(entry)})`);
+                const string = JSON.stringify(entry);
                 for(let i = 0; i < poses.length; i++) els.push(string[poses[i]]);
-            } else for(let i = 0; i < poses.length; i++) els.push(arr[poses[i]]);
+            } else for(let i = 0; i < poses.length; i++) els.push(entry[poses[i]]);
             return els;
         
         default:

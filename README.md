@@ -23,7 +23,7 @@ Use the same name for a variable, function and method? Fine. Add spaces or symbo
 Ghost is alive and evolving - its creator, [@BeanTheAlien](https://github.com/BeanTheAlien), keeps pushing updates that expand what a scripting language can do.\
 Got a project? Try GhostScript and see how much simpler coding can feel.
 
-# Version 0.0.9
+# Version 0.0.10
 
 # Downloads
 ## Stable
@@ -129,7 +129,10 @@ Try running your script - you should see "Hello, World!".
 - Continued development to add function support. (30/11/2025)
 - Added function support. (30/11/2025)
 - MAJOR: updated variable logic to properly print `undefined`, should a variable not exist, instead of printing the name. (01/12/2025)
-- Implemented array access. You can retrieve multiple elements by seperating indexes to be retrieved by a comma.
+- Implemented array access. You can retrieve multiple elements by seperating indexes to be retrieved by a comma. (02/12/2025)
+- Major updates to fix array indexing. (02/12/2025)
+## 0.0.10
+- This new version of GS includes support for basic functions, array indexing and variable setting! (02/12/2025)
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~
