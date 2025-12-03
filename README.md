@@ -138,5 +138,5 @@ Try running your script - you should see "Hello, World!".
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~
 - Block statement parsing.
 - Better import logic.
-- Further variable support.
+- Further variable support.\
 ~~- Fix to not print the name of a variable if it was not defined. (v0.0.9)~~
