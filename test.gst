@@ -1,4 +1,7 @@
 import ghost
-if(1 == 1) {
-    println("hello")
+var hello = "Hello"
+var world = "World"
+if(hello == hello) {
+    print(hello)
+    println(world)
 }

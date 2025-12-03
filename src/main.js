@@ -667,7 +667,23 @@ function interp(node) {
             // resolve conditional
             // this is a primitive version, not the final resolver
             if(headerCond[0].type == "Operand") throw new Error(`Unexpected operator in conditional. (got '${headerCond[0].node.val}')`);
-            
+            const exec = () => condBody.node.val.forEach(v => interp(v));
+            if(headerCond[1].val == "==") {
+                if(headerCond[2]) {
+                    const [lhs,, rhs] = headerCond;
+                    if(lhs.type == "Identifier") {
+                        if(rhs.type == "Identifier") {
+                            if(runtime.scope[lhs.val] == runtime.scope[rhs.val]) exec();
+                        } else {
+                            if(runtime.scope[lhs.val] == rhs.val) exec();
+                        }
+                    } else {
+                        if(lhs.val == rhs.val) exec();
+                    }
+                } else {
+                    throw new Error("Cannot compare to none.");
+                }
+            }
             break;
         
         default:
