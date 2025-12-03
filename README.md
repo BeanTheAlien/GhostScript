@@ -135,6 +135,7 @@ Try running your script - you should see "Hello, World!".
 ## 0.0.10
 - This new version of GS includes support for basic functions, array indexing and variable setting! (02/12/2025)
 - If statements now work with comparison (with '=='). (03/12/2025)
+- Extender operator support and updated some structural things. (03/12/2025)
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~
@@ -142,3 +143,4 @@ Try running your script - you should see "Hello, World!".
 - Better import logic.
 - Further variable support.\
 ~~- Fix to not print the name of a variable if it was not defined. (v0.0.9)~~
+- Logical operator support.
