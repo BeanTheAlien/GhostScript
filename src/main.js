@@ -668,21 +668,51 @@ function interp(node) {
             // this is a primitive version, not the final resolver
             if(headerCond[0].type == "Operand") throw new Error(`Unexpected operator in conditional. (got '${headerCond[0].node.val}')`);
             const exec = () => condBody.node.val.forEach(v => interp(v));
-            if(headerCond[1].val == "==") {
+            const proccess = () => {
                 if(headerCond[2]) {
                     const [lhs,, rhs] = headerCond;
                     if(lhs.type == "Identifier") {
                         if(rhs.type == "Identifier") {
-                            if(runtime.scope[lhs.val] == runtime.scope[rhs.val]) exec();
+                            return { lhs: runtime.scope[lhs.val], rhs: runtime.scope[rhs.val] };
                         } else {
-                            if(runtime.scope[lhs.val] == rhs.val) exec();
+                            return { lhs: runtime.scope[lhs.val], rhs: rhs.val };
                         }
                     } else {
-                        if(lhs.val == rhs.val) exec();
+                        if(rhs.type == "Identifier") {
+                            return { lhs: lhs.val, rhs: runtime.scope[rhs.val] };
+                        } else {
+                            return { lhs: lhs.val, rhs: rhs.val };
+                        }
                     }
                 } else {
-                    throw new Error("Cannot compare to none.");
+                    throw new Error(`Cannot compare to none. (condition: ${headerCond})`);
                 }
+            }
+            const cond = headerCond[1].val;
+            const { lhs, rhs } = proccess();
+            if(cond == "==") {
+                if(lhs == rhs) exec();
+                return;
+            }
+            if(cond == "!=") {
+                if(lhs != rhs) exec();
+                return;
+            }
+            if(cond == "<") {
+                if(lhs < rhs) exec();
+                return;
+            }
+            if(cond == ">") {
+                if(lhs > rhs) exec();
+                return;
+            }
+            if(cond == "<=") {
+                if(lhs <= rhs) exec();
+                return;
+            }
+            if(cond == ">=") {
+                if(lhs >= rhs) exec();
+                return;
             }
             break;
         
