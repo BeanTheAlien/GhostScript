@@ -134,6 +134,7 @@ Try running your script - you should see "Hello, World!".
 - Major updates to fix array indexing. (02/12/2025)
 ## 0.0.10
 - This new version of GS includes support for basic functions, array indexing and variable setting! (02/12/2025)
+- If statements now work with comparison (with '=='). (03/12/2025)
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~
