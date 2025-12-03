@@ -269,7 +269,6 @@ function parseBlock(tokens, i) {
     }
     // Handle unterminated block statements
     if(depth > 0) throw new Error("Unterminated block statement. (expected '}')");
-    // remove ending right brace
     let parsedBody = [];
     let j = 0;
     while(j < body.length) {
@@ -311,6 +310,43 @@ function parseBlockHeader(tokens, i) {
             if(curArg.length) headerParams.push(curArg);
         }
         return { node: { type: "BlockDeclaration", val: { type: header, mods, name: headerName, params: headerParams } }, next: i + 1 };
+    }
+    // conditional headers
+    if(["if", "while"].includes(header)) {
+        // move to opening paren
+        i++;
+        if(tokens[i].id != "lparen") throw new Error("Expected left paren for conditional header.");
+        // move inside
+        i++;
+        if(tokens[i].id == "rparen") throw new Error("Unexpected termination of conditional header.");
+        let cond = [];
+        let depth = 1;
+        while(i < tokens.length && depth > 0) {
+            const tk = tokens[i];
+            if(tk.id == "lparen") {
+                // go into another conditional statement
+                depth++;
+                if(depth > 1) cond.push(tk);
+            } else if(tk.id == "rparen") {
+                // move up a level
+                depth--;
+                if(depth > 1) cond.push(tk);
+                else break;
+            } else {
+                cond.push(tk);
+            }
+            i++;
+        }
+        if(depth > 0) throw new Error("Unterminated conditional statement. (expected ')')");
+        // since the conditional is not parsed, parse it
+        let parsedCond = [];
+        let j = 0;
+        while(j < cond.length) {
+            const parsed = parseExpr(cond, j);
+            parsedCond.push(parsed.node);
+            j = parsed.next;
+        }
+        return { node: { type: "ConditionalHeader", val: [header, parsedCond] }, next: i + 1 };
     }
     throw new Error(`Unknown block header '${header}'.`);
 }
@@ -442,6 +478,12 @@ function parsePrim(tokens, i) {
         const funcBody = parseBlock(tokens, funcHeader.next);
         return { node: { type: "FunctionDeclaration", val: [header, funcBody] }, next: funcBody.next + 1 };
     }
+    if(token.id == "keyword" && (token.val == "if" || token.val == "while")) {
+        const condHeader = parseBlockHeader(tokens, i);
+        const header = condHeader.node.val[0];
+        const condBody = parseBlock(tokens, condHeader.next);
+        return { node: { type: "ConditionalHeader", val: [header, condHeader.node.val[1], condBody] }, next: condBody.next + 1 };
+    }
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "lbracket") {
         const access = parseArrAccess(tokens, i);
         return { node: { type: "ArrayAccess", val: [token.val, access.poses] }, next: access.next };
@@ -449,6 +491,7 @@ function parsePrim(tokens, i) {
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "num") return { node: { type: "Literal", val: Number(token.val) }, next: i + 1 };
+    if(token.id == "opr") return { node: { type: "Operand", val: token.val }, next: i + 1 };
     if(token.id == "lbracket") {
         const arr = parseArr(tokens, i);
         return { node: arr.node, next: arr.next };
@@ -489,7 +532,7 @@ function interp(node) {
         console.error("interp got a non-node:", node);
         throw new Error("interp received invalid AST node");
     }
-
+    
     switch(node.type) {
         case "Literal":
             return node.val;
@@ -618,6 +661,14 @@ function interp(node) {
                 for(let i = 0; i < poses.length; i++) els.push(string[poses[i]]);
             } else for(let i = 0; i < poses.length; i++) els.push(entry[poses[i]]);
             return els;
+        
+        case "ConditionalHeader":
+            const [header, headerCond, condBody] = node.val;
+            // resolve conditional
+            // this is a primitive version, not the final resolver
+            if(headerCond[0].type == "Operand") throw new Error(`Unexpected operator in conditional. (got '${headerCond[0].node.val}')`);
+            
+            break;
         
         default:
             console.error("interp: unknown node:", node);
