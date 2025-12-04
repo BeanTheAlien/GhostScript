@@ -75,9 +75,9 @@ function tokenize(script) {
         }
         // block comments
         if(char == "/" && script[i + 1] == "*") {
-            i++;
+            i += 2;
             while(script[i] != "*") i++;
-            i++;
+            i += 2;
             continue;
         }
 
