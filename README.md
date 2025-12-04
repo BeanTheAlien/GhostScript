@@ -137,6 +137,8 @@ Try running your script - you should see "Hello, World!".
 - If statements now work with comparison (with '=='). (03/12/2025)
 - Extender operator support and updated some structural things. (03/12/2025)
 - More if statement support. Supports validity check and not valid checks. (03/12/2025)
+- Fixed an error that caused \<id\>, !\<id\> to not work. (04/12/2025)
+- Added `true`, `false`, `null`, `undefined` as variables. (04/12/2025)
 
 # Roadmap
 ~~- More comprehensive lexer/compiler. (v0.0.6)~~

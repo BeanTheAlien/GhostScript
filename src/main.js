@@ -23,7 +23,12 @@ const safe = hasFlag("safe");
 
 var runtime = {
     modules: {},
-    scope: {}
+    scope: {
+        "true": true,
+        "false": false,
+        "null": null,
+        "undefined": undefined
+    }
 };
 var moduleDev = null;
 
