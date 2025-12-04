@@ -721,6 +721,22 @@ function interp(node) {
                     return;
                 }
             }
+            // has a logical operator
+            const hasLog = headerCond.some(c => c.type == "Operand" && (c.val == "||" || c.val == "&&"));
+            // identifiy chunks (split by logical operators)
+            if(hasLog) {
+                const chunks = [];
+                let j = 0;
+                let cur = [];
+                while(j < headerCond.length) {
+                    if(headerCond[j].val != "||" && headerCond[j].val != "&&") {
+                        cur.push(headerCond[j]);
+                    } else {
+                        chunks.push(cur);
+                        chunks.push(headerCond[j]);
+                    }
+                }
+            }
             if(headerCond[0].type == "Not") {
                 if(headerCond[1]) {
                     const ent = headerCond[1];
