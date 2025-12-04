@@ -1,7 +1,6 @@
 import ghost
 var hello = "Hello"
 var world = "World"
-if(hello == hello) {
+if(!steve) {
     print(hello)
-    println(world)
 }

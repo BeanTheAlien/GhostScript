@@ -697,15 +697,23 @@ function interp(node) {
             if(headerCond.length == 1) {
                 const ent = headerCond[0];
                 if(ent.type == "Identifier") {
-                    return Object.hasOwn(runtime.scope, ent.val);
-                } else return ent.val != undefined;
+                    if(Object.hasOwn(runtime.scope, ent.val)) exec();
+                    return;
+                } else {
+                    if(ent.val != undefined) exec();
+                    return;
+                }
             }
             if(headerCond[0].type == "Not") {
                 if(headerCond[1]) {
                     const ent = headerCond[1];
                     if(ent.type == "Identifier") {
-                        return !Object.hasOwn(runtime.scope, ent.val);
-                    } else return ent.val == undefined;
+                        if(!Object.hasOwn(runtime.scope, ent.val)) exec();
+                        return;
+                    } else {
+                        if(ent.val == undefined) exec();
+                        return;
+                    }
                 } else {
                     throw new Error("Expected statement after not operator.");
                 }
