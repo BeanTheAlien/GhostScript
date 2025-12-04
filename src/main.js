@@ -901,8 +901,36 @@ async function getModuleStructure() {
         console.error("Network error occured");
     });
 }
+async function hasIndexJSON(m) {
+    try {
+        const res = await fetch(`https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${m}/index.json`);
+        if(!res.ok) return false;
+        return true;
+    } catch(e) {
+        console.error(e);
+    }
+}
+async function getIndexJSON(m) {
+    try {
+        const res = await fetch(`https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${m}/index.json`);
+        if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
+        const data = res.json();
+        return data;
+    } catch(e) {
+        console.error(e);
+    }
+}
+// async hasRealFile
 async function getModule(name, subname) {
     if(!moduleDev) await fetchModuleDev();
+    if(await hasIndexJSON(`${name}/${subname}`)) {
+        const index = await getIndexJSON();
+        for(const file of index.files) {
+            await getModule(file, file);
+        }
+    } else {
+        //
+    }
     const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${name}/${subname}.js`;
     const js = await fetchRaw(url);
     const module = { exports: {} };
