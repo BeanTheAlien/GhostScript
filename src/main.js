@@ -175,6 +175,11 @@ function tokenize(script) {
             i++;
             continue;
         }
+        if(char == "!") {
+            tokens.push({ id: "not", val: char });
+            i++;
+            continue;
+        }
 
         // if we reach here, it's unknown
         tokens.push({ id: "unknown", val: char });
@@ -500,6 +505,7 @@ function parsePrim(tokens, i) {
         const block = parseBlock(tokens, i);
         return { node: block.node, next: block.next };
     }
+    if(token.id == "not") return { node: { type: "Not", val: token.val }, next: i + 1 };
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
 function parseArguments(tokens, i) {
@@ -686,6 +692,22 @@ function interp(node) {
                     }
                 } else {
                     throw new Error(`Cannot compare to none. (condition: ${headerCond})`);
+                }
+            }
+            if(headerCond.length == 1) {
+                const ent = headerCond[0];
+                if(ent.type == "Identifier") {
+                    return Object.hasOwn(runtime.scope, ent.val);
+                } else return ent.val != undefined;
+            }
+            if(headerCond[0].type == "Not") {
+                if(headerCond[1]) {
+                    const ent = headerCond[1];
+                    if(ent.type == "Identifier") {
+                        return !Object.hasOwn(runtime.scope, ent.val);
+                    } else return ent.val == undefined;
+                } else {
+                    throw new Error("Expected statement after not operator.");
                 }
             }
             const cond = headerCond[1].val;
