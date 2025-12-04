@@ -1,1 +1,1 @@
-import ghost
+import ghost.ghost

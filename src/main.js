@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
+const cp = require("child_process");
 
 const [,, ...args] = process.argv;
 function hasFlag(flag) {
@@ -20,6 +21,7 @@ const file = hasFlag("test") ? "../test" : getVal(getFlag("file"));
 const verbose = hasFlag("verbose");
 const debug = hasFlag("debug");
 const safe = hasFlag("safe");
+const beta = hasFlag("beta");
 
 var runtime = {
     modules: {},
@@ -197,13 +199,21 @@ async function parser(tokens) {
     while(i < tokens.length) {
         const tk = tokens[i];
         if(tk.id == "keyword" && tk.val == "import") {
-            // const imp = parseImport(tokens, i);
-            // if(!imp.module.length) throw new Error(`Unexpected end of import.`);
-            // if(imp.module[0].id != "id") throw new Error(`Unexpected token '${imp.module[0].val}' (expected 'id').`);
-            const modName = tokens[i+1].val;
-            const lib = await getModule(modName, modName);
+            let modName;
+            let lib;
+            let imp;
+            if(beta) {
+                const imported = parseImport(tokens, i);
+                if(!imported.module.length) throw new Error(`Unexpected end of import.`);
+                modName = imported.module[0].val;
+                lib = await getModule(...imported.module);
+                imp = imported;
+            } else {
+                modName = tokens[i+1].val;
+                lib = await getModule(modName, modName);
+            }
             if(!lib) {
-                console.error(`Could not load module ${modName}`);
+                console.error(`Could not load module '${imp != undefined ? imp.module.join(".") : modName}'`);
                 break;
             }
             // always keep module object available
@@ -223,8 +233,8 @@ async function parser(tokens) {
                 const rootName = lib.meta.defroot || modName;
                 runtime.scope[rootName] = lib.exports;
             }
-            // i = imp.next;
-            i += 2;
+            i = imp.next;
+            // i += 2;
             continue;
         }
         const expr = parseExpr(tokens, i);
@@ -526,13 +536,15 @@ function parseArguments(tokens, i) {
 }
 function parseImport(tokens, i) {
     const module = [];
+    // skip import statement
+    i++;
     while(i < tokens.length && (tokens[i].id == "id" || tokens[i].id == "dot")) {
         const tk = tokens[i];
         if(tk.id == "dot") {
             i++;
             continue;
         }
-        module.push(tk.value);
+        module.push(tk.val);
         i++;
     }
     return { module, next: i };
@@ -858,10 +870,13 @@ async function compile(tokens) {
 //     return module.exports;
 //   };
 // }
+function raw(url) {
+    return `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/${url}`;
+}
 async function fetchRaw(url) {
     try {
         const res = await fetch(url);
-        if(!res.ok) throw new Error(res.status);
+        if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const text = await res.text();
         return text;
     } catch(e) {
@@ -870,8 +885,8 @@ async function fetchRaw(url) {
 }
 async function fetchModuleDev() {
     try {
-        const res = await fetch(`https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/dev/module_dev.js`);
-        if(!res.ok) throw new Error(res.status);
+        const res = await fetch(raw("dev/module_dev.js"));
+        if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const module = { exports: {} };
         const js = await res.text();
         const wrapped = new Function("module", "exports", js);
@@ -892,7 +907,7 @@ async function getModuleStructure() {
         if(request.status == 200) {
             const data = JSON.parse(request.response);
             console.log(data);
-            // fs.writeFileSync("module_structure.json", data);
+            fs.writeFileSync("module_structure.json", data);
         } else {
             console.error(`Error fetching module structure: ${request.status}, ${request.statusText}`);
         }
@@ -901,18 +916,17 @@ async function getModuleStructure() {
         console.error("Network error occured");
     });
 }
-async function hasIndexJSON(m) {
+async function hasIndexJSON(module) {
     try {
-        const res = await fetch(`https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${m}/index.json`);
-        if(!res.ok) return false;
-        return true;
+        const res = await fetch(raw(`modules/${module}/index.json`));
+        return res.ok;
     } catch(e) {
         console.error(e);
     }
 }
-async function getIndexJSON(m) {
+async function getIndexJSON(module) {
     try {
-        const res = await fetch(`https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${m}/index.json`);
+        const res = await fetch(raw(`modules/${module}/index.json`));
         if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const data = res.json();
         return data;
@@ -920,22 +934,73 @@ async function getIndexJSON(m) {
         console.error(e);
     }
 }
-// async hasRealFile
-async function getModule(name, subname) {
+async function hasFile(root, name) {
+    try {
+        const res = await fetch(raw(`modules/${root}/${name}.js`));
+        return res.ok;
+    } catch(e) {
+        console.error(e);
+    }
+}
+// async function getFile(root, name) {
+//     try {
+//         const res = await fetch(raw(`modules/${root}/${name}.js`));
+//         if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
+//         const data = res.text();
+//         return data;
+//     } catch(e) {
+//         console.error(e);
+//     }
+// }
+async function getModule(...modules) {
     if(!moduleDev) await fetchModuleDev();
-    if(await hasIndexJSON(`${name}/${subname}`)) {
-        const index = await getIndexJSON();
-        for(const file of index.files) {
-            await getModule(file, file);
+    if(beta) {
+        const modulesPath = modules.join("/");
+        if(await hasIndexJSON(modulesPath)) {
+            const index = await getIndexJSON();
+            for(const file of index.files) {
+                await getModule(`${modulesPath}/${file}`);
+            }
+        } else {
+            const slice = modules.slice(0, -2).join("/");
+            const last = modules[modules.length - 1];
+            if(await hasFile(slice, last)) {
+                const js = await fetchRaw(raw(`modules/${slice}/${last}.js`));
+                const module = { exports: {} };
+                const wrapped = new Function("require", "module", "exports", "module_dev", "runtime", js);
+                wrapped(require, module, module.exports, moduleDev, runtime);
+            } else {
+                cp.exec("dir C:\\ /s /b", async (err, stdout, stderr) => {
+                    if(err) throw err;
+                    if(stdout.length) {
+                        const js = fs.readFileSync(stdout, "utf8");
+                        const module = { exports: {} };
+                        const wrapped = new Function("require", "module", "exports", "module_dev", "runtime", js);
+                        wrapped(require, module, module.exports, moduleDev, runtime);
+                    } else if(stderr.length) {
+                        console.error(stderr);
+                    } else {
+                        await getModuleStructure();
+                        const moduleStructure = JSON.parse(fs.readFileSync("module_structure.json"));
+                        const jsonPath = `${modulesPath}/index.json`;
+                        if(moduleStructure[jsonPath]) {
+                            for(const file of JSON.parse(Buffer.from(moduleStructure[jsonPath].content, "base64").toString("utf8"))) {
+                                await getModule(`${modulesPath}/${file}`);
+                            }
+                        } else {
+                            throw new Error(`Cannot find module '${modulesPath}'`);
+                        }
+                    }
+                });
+            }
         }
     } else {
-        //
+        const url = raw(`modules/${modules[0]}/${modules[1]}.js`);
+        const js = await fetchRaw(url);
+        const module = { exports: {} };
+        const wrapped = new Function("require", "module", "exports", "module_dev", "runtime", js);
+        wrapped(require, module, module.exports, moduleDev, runtime);
     }
-    const url = `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/modules/${name}/${subname}.js`;
-    const js = await fetchRaw(url);
-    const module = { exports: {} };
-    const wrapped = new Function("require", "module", "exports", "module_dev", "runtime", js);
-    wrapped(require, module, module.exports, moduleDev, runtime);
     // try {
     //     const wrapped = new Function("module", "exports", "require", js);
     //     wrapped(module, module.exports, require);
