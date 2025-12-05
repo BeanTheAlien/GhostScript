@@ -688,95 +688,8 @@ function interp(node) {
         case "ConditionalHeader":
             const [header, headerCond, condBody] = node.val;
             // resolve conditional
-            // this is a primitive version, not the final resolver
-            if(headerCond[0].type == "Operand") throw new Error(`Unexpected operator in conditional. (got '${headerCond[0].node.val}')`);
             const exec = () => condBody.node.val.forEach(v => interp(v));
-            const proccess = () => {
-                if(headerCond[2]) {
-                    const [lhs,, rhs] = headerCond;
-                    if(lhs.type == "Identifier") {
-                        if(rhs.type == "Identifier") {
-                            return { lhs: runtime.scope[lhs.val], rhs: runtime.scope[rhs.val] };
-                        } else {
-                            return { lhs: runtime.scope[lhs.val], rhs: rhs.val };
-                        }
-                    } else {
-                        if(rhs.type == "Identifier") {
-                            return { lhs: lhs.val, rhs: runtime.scope[rhs.val] };
-                        } else {
-                            return { lhs: lhs.val, rhs: rhs.val };
-                        }
-                    }
-                } else {
-                    throw new Error(`Cannot compare to none. (condition: ${headerCond})`);
-                }
-            }
-            if(headerCond.length == 1) {
-                const ent = headerCond[0];
-                if(ent.type == "Identifier") {
-                    if(Object.hasOwn(runtime.scope, ent.val)) exec();
-                    return;
-                } else {
-                    if(ent.val != undefined) exec();
-                    return;
-                }
-            }
-            // has a logical operator
-            const hasLog = headerCond.some(c => c.type == "Operand" && (c.val == "||" || c.val == "&&"));
-            // identifiy chunks (split by logical operators)
-            if(hasLog) {
-                const chunks = [];
-                let j = 0;
-                let cur = [];
-                while(j < headerCond.length) {
-                    if(headerCond[j].val != "||" && headerCond[j].val != "&&") {
-                        cur.push(headerCond[j]);
-                    } else {
-                        chunks.push(cur);
-                        chunks.push(headerCond[j]);
-                    }
-                }
-            }
-            if(headerCond[0].type == "Not") {
-                if(headerCond[1]) {
-                    const ent = headerCond[1];
-                    if(ent.type == "Identifier") {
-                        if(!Object.hasOwn(runtime.scope, ent.val)) exec();
-                        return;
-                    } else {
-                        if(ent.val == undefined) exec();
-                        return;
-                    }
-                } else {
-                    throw new Error("Expected statement after not operator.");
-                }
-            }
-            const cond = headerCond[1].val;
-            const { lhs, rhs } = proccess();
-            if(cond == "==") {
-                if(lhs == rhs) exec();
-                return;
-            }
-            if(cond == "!=") {
-                if(lhs != rhs) exec();
-                return;
-            }
-            if(cond == "<") {
-                if(lhs < rhs) exec();
-                return;
-            }
-            if(cond == ">") {
-                if(lhs > rhs) exec();
-                return;
-            }
-            if(cond == "<=") {
-                if(lhs <= rhs) exec();
-                return;
-            }
-            if(cond == ">=") {
-                if(lhs >= rhs) exec();
-                return;
-            }
+            if(resolveCond(headerCond)) exec();
             break;
         
         default:
@@ -1197,6 +1110,89 @@ function findMethod(targetType, name) {
         }
     }
     return null;
+}
+
+function resolveCond(cond) {
+    if(cond[0].type == "Operand") throw new Error(`Unexpected operator in conditional. (got '${cond[0].val}')`);
+    const proccess = () => {
+        if(cond[2]) {
+            const [lhs,, rhs] = cond;
+            if(lhs.type == "Identifier") {
+                if(rhs.type == "Identifier") {
+                    return { lhs: runtime.scope[lhs.val], rhs: runtime.scope[rhs.val] };
+                } else {
+                    return { lhs: runtime.scope[lhs.val], rhs: rhs.val };
+                }
+            } else {
+                if(rhs.type == "Identifier") {
+                    return { lhs: lhs.val, rhs: runtime.scope[rhs.val] };
+                } else {
+                    return { lhs: lhs.val, rhs: rhs.val };
+                }
+            }
+        } else {
+            throw new Error(`Cannot compare to none. (condition: ${cond})`);
+        }
+    }
+    if(cond.length == 1) {
+        const ent = cond[0];
+        if(ent.type == "Identifier") {
+            return Object.hasOwn(runtime.scope, ent.val);
+        } else {
+            return ent.val != undefined;
+        }
+    }
+    // has a logical operator
+    const hasLog = cond.some(c => c.type == "Operand" && (c.val == "||" || c.val == "&&"));
+    // identifiy chunks (split by logical operators)
+    if(hasLog) {
+        const chunks = [];
+        let cur;
+        for(let i = 0; i < cond.length; i++) {
+            const x = cond[i];
+            if(x.type == "Operand" && (x.val == "||" || x.val == "&&")) {
+                chunks.push(cur);
+                chunks.push(x.val);
+                cur = [];
+            } else {
+                cur.push(x);
+            }
+        }
+        if(cur.length > 0) chunks.push(cur);
+        if(!Array.isArray(chunks[0])) throw new Error(`Unexpected logical operator. (condition: ${cond})`);
+        if(!Array.isArray(chunks[chunks.length - 1])) throw new Error(`Unfinished conditional. (condition: ${cond})`);
+        const resolveLogical = () => {
+            let acc = resolveCond(chunks[0]);
+            for(let i = 1; i < chunks.length; i += 2) {
+                const op = chunks[i];
+                const rhs = resolveCond(chunks[i + 1]);
+                if(op == "&&") acc = acc && rhs;
+                else acc = acc || rhs;
+            }
+            return acc;
+        }
+        return resolveLogical();
+    }
+    if(cond[0].type == "Not") {
+        if(cond[1]) {
+            const ent = cond[1];
+            if(ent.type == "Identifier") {
+                return !Object.hasOwn(runtime.scope, ent.val);
+            } else {
+                return ent.val == undefined;
+            }
+        } else {
+            throw new Error("Expected statement after not operator.");
+        }
+    }
+    const opr = cond[1].val;
+    const { lhs, rhs } = proccess();
+    if(opr == "==") return lhs == rhs;
+    if(opr == "!=") return lhs != rhs;
+    if(opr == "<") return lhs < rhs;
+    if(opr == ">") return lhs > rhs;
+    if(opr == "<=") return lhs <= rhs;
+    if(opr == ">=") return lhs >= rhs;
 }
 
 // var ghostMemory = { "variables": {}, "functions": {}, "methods": {}, "properties": {}, "types": {}, "classes": {} };
