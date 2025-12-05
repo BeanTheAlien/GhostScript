@@ -2,6 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 const cp = require("child_process");
+const ContextAwarenessAPI = require("../api/ContextAwareness/contextawareness.js");
+const AutoDebuggerAPI = require("../api/AutoDebugger/autodebugger.js");
+const ContextAwareness = new ContextAwarenessAPI();
+const AutoDebugger = new AutoDebuggerAPI();
 
 const [,, ...args] = process.argv;
 function hasFlag(flag) {
@@ -41,6 +45,8 @@ async function main() {
     //const tokens = await lexer(grammar, script);
     //await compile(tokens);
     const tokens = tokenize(script);
+    ContextAwareness.feed(tokens);
+    AutoDebugger.feed(tokens);
     await parser(tokens);
 }
 main();
@@ -787,22 +793,9 @@ async function compile(tokens) {
 //     return module.exports;
 //   };
 // }
-function raw(url) {
-    return `https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost/${url}`;
-}
-async function fetchRaw(url) {
-    try {
-        const res = await fetch(url);
-        if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
-        const text = await res.text();
-        return text;
-    } catch(e) {
-        console.log(e);
-    }
-}
 async function fetchModuleDev() {
     try {
-        const res = await fetch(raw("dev/module_dev.js"));
+        const res = await fetch("https://beanthealien.github.io/ghost/dev/module_dev.js");
         if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const module = { exports: {} };
         const js = await res.text();
@@ -811,52 +804,6 @@ async function fetchModuleDev() {
         moduleDev = module.exports;
     } catch(e) {
         console.log(e);
-    }
-}
-async function getModuleStructure() {
-    const owner = "BeanTheAlien";
-    const repo = "BeanTheAlien.github.io";
-    const path = "ghost/modules";
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-    const request = new XMLHttpRequest();
-    request.open("GET", url);
-    request.addEventListener("load", () => {
-        if(request.status == 200) {
-            const data = JSON.parse(request.response);
-            console.log(data);
-            fs.writeFileSync("module_structure.json", data);
-        } else {
-            console.error(`Error fetching module structure: ${request.status}, ${request.statusText}`);
-        }
-    });
-    request.addEventListener("error", () => {
-        console.error("Network error occured");
-    });
-}
-async function hasIndexJSON(module) {
-    try {
-        const res = await fetch(raw(`modules/${module}/index.json`));
-        return res.ok;
-    } catch(e) {
-        console.error(e);
-    }
-}
-async function getIndexJSON(module) {
-    try {
-        const res = await fetch(raw(`modules/${module}/index.json`));
-        if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
-        const data = res.json();
-        return data;
-    } catch(e) {
-        console.error(e);
-    }
-}
-async function hasFile(root, name) {
-    try {
-        const res = await fetch(raw(`modules/${root}/${name}.js`));
-        return res.ok;
-    } catch(e) {
-        console.error(e);
     }
 }
 // async function getFile(root, name) {
@@ -913,14 +860,7 @@ async function loadRemoteModule(segments, logicalPath, visited) {
         const js = await fetchText(remoteBase + ".js");
         const moduleObj = { exports: {} };
 
-        const wrapped = new Function(
-            "require",
-            "module",
-            "exports",
-            "runtime",
-            "module_dev",
-            js
-        );
+        const wrapped = new Function("require", "module", "exports", "runtime", "module_dev", js);
 
         wrapped(require, moduleObj, moduleObj.exports, runtime, moduleDev);
 
@@ -1139,7 +1079,7 @@ function resolveCond(cond) {
     if(cond.length == 1) {
         const ent = cond[0];
         if(ent.type == "Identifier") {
-            return Object.hasOwn(runtime.scope, ent.val);
+            return Object.hasOwn(runtime.scope, ent.val) && runtime.scope[ent.val] != undefined;
         } else {
             return ent.val != undefined;
         }
@@ -1149,7 +1089,7 @@ function resolveCond(cond) {
     // identifiy chunks (split by logical operators)
     if(hasLog) {
         const chunks = [];
-        let cur;
+        let cur = [];
         for(let i = 0; i < cond.length; i++) {
             const x = cond[i];
             if(x.type == "Operand" && (x.val == "||" || x.val == "&&")) {
@@ -1179,7 +1119,7 @@ function resolveCond(cond) {
         if(cond[1]) {
             const ent = cond[1];
             if(ent.type == "Identifier") {
-                return !Object.hasOwn(runtime.scope, ent.val);
+                return !Object.hasOwn(runtime.scope, ent.val) || runtime.scope[ent.val] == undefined;
             } else {
                 return ent.val == undefined;
             }
