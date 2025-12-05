@@ -2,8 +2,6 @@
 This is the home of the GhostScript language!
 
 # IMPORTANT
-For those with existing GS installs, PLEASE remove "C:\\Program Files\\GhostScript".\
-GS installs will be moving to "C:\\GhostScript"!\
 Note that GhostScript **is not development ready**.\
 If you want to use GS in a development environment, please come back when v1.0.0 is released.\
 I apologize for the inconvenience.

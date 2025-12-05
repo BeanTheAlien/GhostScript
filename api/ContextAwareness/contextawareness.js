@@ -2,9 +2,10 @@ class ContextAwarenessAPI {
     constructor() {
         this.tokens = null;
     }
-    feed(tokens) {
+    feed(tokens, runtime) {
         this.tokens = tokens;
+        this.runtime = runtime;
     }
 }
 
-module.exports = { default: ContextAwarenessAPI };
+module.exports = { ContextAwarenessAPI };

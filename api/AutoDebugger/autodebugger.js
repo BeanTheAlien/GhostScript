@@ -1,11 +1,13 @@
 class AutoDebuggerAPI {
     constructor() {
         this.tokens = null;
+        this.runtime = null;
     }
-    feed(tokens) {
+    feed(tokens, runtime) {
         this.tokens = tokens;
+        this.runtime = runtime;
     }
     resolveNotFound(input) {}
 }
 
-module.exports = { default: AutoDebuggerAPI };
+module.exports = { AutoDebuggerAPI };

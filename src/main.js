@@ -4,8 +4,8 @@ const https = require("https");
 const cp = require("child_process");
 const ContextAwarenessAPI = require("../api/ContextAwareness/contextawareness.js");
 const AutoDebuggerAPI = require("../api/AutoDebugger/autodebugger.js");
-const ContextAwareness = new ContextAwarenessAPI();
-const AutoDebugger = new AutoDebuggerAPI();
+const ContextAwareness = new ContextAwarenessAPI.ContextAwarenessAPI();
+const AutoDebugger = new AutoDebuggerAPI.AutoDebuggerAPI();
 
 const [,, ...args] = process.argv;
 function hasFlag(flag) {
@@ -26,6 +26,16 @@ const verbose = hasFlag("verbose");
 const debug = hasFlag("debug");
 const safe = hasFlag("safe");
 const beta = hasFlag("beta");
+
+// class Runtime {
+//     constructor() {
+//         this.modules = {};
+//         this.scope = {};
+//     }
+//     has(k) {
+//         return Object.hasOwn(this.scope, k);
+//     }
+// }
 
 var runtime = {
     modules: {},
@@ -205,30 +215,34 @@ async function parser(tokens) {
     while(i < tokens.length) {
         const tk = tokens[i];
         if(tk.id == "keyword" && tk.val == "import") {
-            const modName = tokens[i+1].val;
-            const lib = await getModule(modName, modName);
+            const imp = parseImport(tokens, i);
+            if(!imp.module.length) throw new Error("Unexpected termination of import.");
+            // const modName = tokens[i+1].val;
+            const lib = await getModule(imp.module);
+            const impName = imp.module.join(".");
             if(!lib) {
-                console.error(`Could not load module '${modName}'`);
+                console.error(`Could not load module '${impName}'`);
                 break;
             }
             // always keep module object available
-            runtime.modules[modName] = lib;
+            runtime.modules[impName] = lib;
             // if reqroot is false, inject exported names into runtime.scope
             if(lib.meta && lib.meta.reqroot == false) {
                 for(const [k, v] of Object.entries(lib.exports)) {
                     // avoid clobbering existing names unless you want to
                     if(runtime.scope[k]) {
-                        console.warn(`Skipping import of '${k}' from ${modName}: name conflict in global scope`);
+                        console.warn(`Skipping import of '${k}' from ${impName}: name conflict in global scope`);
                         continue;
                     }
                     runtime.scope[k] = v;
                 }
             } else {
                 // else expose under default root name
-                const rootName = lib.meta.defroot || modName;
+                const rootName = lib.meta.defroot || impName;
                 runtime.scope[rootName] = lib.exports;
             }
-            i += 2;
+            // i += 2;
+            i = imp.next;
             continue;
         }
         const expr = parseExpr(tokens, i);
@@ -433,7 +447,8 @@ function parseMath(tokens, i) {
     while(i < tokens.length) {
         let lhs = tokens[i];
         // if there is an operator after lhs, continue solving
-        // else we can break early (it is solved already)
+        // else, if there is a token, throw error (there needs to be an operator to work with)
+        // else we break early (it is solved)
         if(tokens[i+1] && tokens[i+1].id == "opr") {
             let opr = tokens[i+1];
             // assuming an operator is found, it requires rhs
@@ -447,7 +462,10 @@ function parseMath(tokens, i) {
                 case "%": n += lhs % rhs; break;
             }
         }
-        else break;
+        else {
+            if(tokens[i+1]) throw new Error(`Cannot resolve non-operator. (got: '${tokens[i+1].val})`);
+            else break;
+        }
         i++;
     }
     return { node: { type: "Literal", val: n }, next: i + 1 };
@@ -681,9 +699,30 @@ function interp(node) {
         
         case "ConditionalHeader":
             const [header, headerCond, condBody] = node.val;
-            // resolve conditional
+            // simple runner, goes through the body and evaluates it
             const exec = () => condBody.node.val.forEach(v => interp(v));
-            if(resolveCond(headerCond)) exec();
+            // check header type to determine what to do
+            if(header == "if") {
+                // resolve conditional
+                if(resolveCond(headerCond)) exec();
+                return;
+            }
+            if(header == "while") {
+                // to prevent infinite loops, use a loop tracker
+                // where `n` is the number of times its looped
+                // to allow infinite loops, toggle infinite buffering
+                // in config.json (see https://github.com/BeanTheAlien/GhostScript/wiki/infinite-buffering)
+                let n = 0;
+                while(resolveCond(headerCond)) {
+                    // if it exceeds 999M, its considered an infinite loop and it should break
+                    if(n > 999999999) {
+                        console.log(`While loop max iterations reached. (condition: '${headerCond}')`);
+                        break;
+                    }
+                    exec();
+                    n++;
+                }
+            }
             break;
         
         default:
@@ -901,7 +940,7 @@ function finalizeRemote(name, moduleObj) {
         moduleObj.exports.errors,
         moduleObj.exports.events,
         moduleObj.exports.operators,
-        moduleObj.exports.directives,
+        moduleObj.exports.directives
     ];
 
     for (const arr of arrays) {
@@ -1135,6 +1174,12 @@ function resolveCond(cond) {
     if(opr == ">") return lhs > rhs;
     if(opr == "<=") return lhs <= rhs;
     if(opr == ">=") return lhs >= rhs;
+}
+
+function preprocess(tokens) {
+    // this should handle: variables, functions, methods, properties, types, classes, imports
+    let i = 0;
+    while(i < tokens.length) {}
 }
 
 // var ghostMemory = { "variables": {}, "functions": {}, "methods": {}, "properties": {}, "types": {}, "classes": {} };
