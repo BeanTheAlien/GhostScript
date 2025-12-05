@@ -140,11 +140,13 @@ Try running your script - you should see "Hello, World!".
 - Fixed an error that caused \<id\>, !\<id\> to not work. (04/12/2025)
 - Added `true`, `false`, `null`, `undefined` as variables. (04/12/2025)
 - Started implementing a better import system. (04/12/2025)
+- Implemented logical operator handling. (04/12/2025)
+- Implemented better import system. (04/12/2025)
 
 # Roadmap
-~~- More comprehensive lexer/compiler. (v0.0.6)~~
-- Block statement parsing.
-- Better import logic.
+~~- More comprehensive lexer/compiler.~~ (v0.0.6)
+~~- Block statement parsing.~~ (v0.0.9)
+~~- Better import logic.~~ (v0.0.10)
 - Further variable support.\
-~~- Fix to not print the name of a variable if it was not defined. (v0.0.9)~~
-- Logical operator support.
+~~- Fix to not print the name of a variable if it was not defined.~~ (v0.0.9)
+~~- Logical operator support.~~ (v0.0.10)

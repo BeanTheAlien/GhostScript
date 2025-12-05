@@ -199,21 +199,10 @@ async function parser(tokens) {
     while(i < tokens.length) {
         const tk = tokens[i];
         if(tk.id == "keyword" && tk.val == "import") {
-            let modName;
-            let lib;
-            let imp;
-            if(beta) {
-                const imported = parseImport(tokens, i);
-                if(!imported.module.length) throw new Error(`Unexpected end of import.`);
-                modName = imported.module[0].val;
-                lib = await getModule(...imported.module);
-                imp = imported;
-            } else {
-                modName = tokens[i+1].val;
-                lib = await getModule(modName, modName);
-            }
+            const modName = tokens[i+1].val;
+            const lib = await getModule(modName, modName);
             if(!lib) {
-                console.error(`Could not load module '${imp != undefined ? imp.module.join(".") : modName}'`);
+                console.error(`Could not load module '${modName}'`);
                 break;
             }
             // always keep module object available
@@ -233,8 +222,7 @@ async function parser(tokens) {
                 const rootName = lib.meta.defroot || modName;
                 runtime.scope[rootName] = lib.exports;
             }
-            i = imp.next;
-            // i += 2;
+            i += 2;
             continue;
         }
         const expr = parseExpr(tokens, i);
@@ -881,75 +869,106 @@ async function hasFile(root, name) {
 //         console.error(e);
 //     }
 // }
-async function getModule(...modules) {
-    if(!moduleDev) await fetchModuleDev();
-    if(beta) {
-        const modulesPath = modules.join("/");
-        if(await hasIndexJSON(modulesPath)) {
-            const index = await getIndexJSON();
-            for(const file of index.files) {
-                await getModule(`${modulesPath}/${file}`);
-            }
-        } else {
-            const slice = modules.slice(0, -2).join("/");
-            const last = modules[modules.length - 1];
-            if(await hasFile(slice, last)) {
-                const js = await fetchRaw(raw(`modules/${slice}/${last}.js`));
-                const module = { exports: {} };
-                const wrapped = new Function("require", "module", "exports", "module_dev", "runtime", js);
-                wrapped(require, module, module.exports, moduleDev, runtime);
-            } else {
-                cp.exec("dir C:\\ /s /b", async (err, stdout, stderr) => {
-                    if(err) throw err;
-                    if(stdout.length) {
-                        const js = fs.readFileSync(stdout, "utf8");
-                        const module = { exports: {} };
-                        const wrapped = new Function("require", "module", "exports", "module_dev", "runtime", js);
-                        wrapped(require, module, module.exports, moduleDev, runtime);
-                    } else if(stderr.length) {
-                        console.error(stderr);
-                    } else {
-                        await getModuleStructure();
-                        const moduleStructure = JSON.parse(fs.readFileSync("module_structure.json"));
-                        const jsonPath = `${modulesPath}/index.json`;
-                        if(moduleStructure[jsonPath]) {
-                            for(const file of JSON.parse(Buffer.from(moduleStructure[jsonPath].content, "base64").toString("utf8"))) {
-                                await getModule(`${modulesPath}/${file}`);
-                            }
-                        } else {
-                            throw new Error(`Cannot find module '${modulesPath}'`);
-                        }
-                    }
-                });
-            }
-        }
-    } else {
-        const url = raw(`modules/${modules[0]}/${modules[1]}.js`);
-        const js = await fetchRaw(url);
-        const module = { exports: {} };
-        const wrapped = new Function("require", "module", "exports", "module_dev", "runtime", js);
-        wrapped(require, module, module.exports, moduleDev, runtime);
-    }
-    // try {
-    //     const wrapped = new Function("module", "exports", "require", js);
-    //     wrapped(module, module.exports, require);
-    // } catch (err) {
-    //     console.error(`Failed to execute module ${name}:`, err);
-    //     return null;
-    // }
-    const m = module.exports || {};
+function baseURL() {
+    return "https://beanthealien.github.io/ghost/modules";
+}
 
-    // Build "flat" exports object that runtime expects.
-    // Support two cases:
-    //  1) module exported structured arrays: { funcs: [...], methods: [...], ... }
-    //  2) module already flattened: { wait: GSFunc, print: GSFunc, ghostmodule: {...} }
+async function getModule(...segments) {
+    if(!moduleDev) await fetchModuleDev();
+    const logicalPath = segments.join("/");
+    const visited = new Set();
+    return await loadRemoteModule(segments, logicalPath, visited);
+}
+
+async function loadRemoteModule(segments, logicalPath, visited) {
+    const remoteBase = `${baseURL()}/${segments.join("/")}`;
+
+    if (visited.has(remoteBase)) {
+        return { meta: {}, exports: {} };
+    }
+    visited.add(remoteBase);
+
+    // 1. Directory with index.json
+    if (await remoteExists(remoteBase + "/index.json")) {
+        const index = await fetchJSON(remoteBase + "/index.json");
+
+        let combined = {
+            meta: { name: logicalPath, defroot: logicalPath, reqroot: true },
+            exports: {}
+        };
+
+        for (const file of index.files) {
+            const childSegments = [...segments, file];
+            const childLogical = `${logicalPath}/${file}`;
+
+            const child = await loadRemoteModule(childSegments, childLogical, visited);
+            Object.assign(combined.exports, child.exports);
+        }
+
+        return combined;
+    }
+
+    // 2. Single JS file
+    if (await remoteExists(remoteBase + ".js")) {
+        const js = await fetchText(remoteBase + ".js");
+        const moduleObj = { exports: {} };
+
+        const wrapped = new Function(
+            "require",
+            "module",
+            "exports",
+            "runtime",
+            "module_dev",
+            js
+        );
+
+        wrapped(require, moduleObj, moduleObj.exports, runtime, moduleDev);
+
+        return finalizeRemote(logicalPath, moduleObj);
+    }
+
+    throw new Error(`Cannot find remote module '${logicalPath}'`);
+}
+
+async function remoteExists(url) {
+    const res = await fetch(url, { method: "HEAD" });
+    return res.ok;
+}
+
+async function fetchJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch ${url}`);
+    return res.json();
+}
+
+async function fetchText(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch ${url}`);
+    return res.text();
+}
+
+function finalizeRemote(name, moduleObj) {
     const flat = {};
 
-    // Helper to flatten arrays of GS* objects into flat[name] = object
-    function flattenArr(arr) {
-        if(!Array.isArray(arr)) return;
-        for(const item of arr) {
-            const nk =
+    const arrays = [
+        moduleObj.exports.vars,
+        moduleObj.exports.funcs,
+        moduleObj.exports.methods,
+        moduleObj.exports.classes,
+        moduleObj.exports.types,
+        moduleObj.exports.props,
+        moduleObj.exports.mods,
+        moduleObj.exports.errors,
+        moduleObj.exports.events,
+        moduleObj.exports.operators,
+        moduleObj.exports.directives,
+    ];
+
+    for (const arr of arrays) {
+        if (!Array.isArray(arr)) continue;
+
+        for (const item of arr) {
+            const n =
                 item?.gsVarName ||
                 item?.gsFuncName ||
                 item?.gsMethodName ||
@@ -961,41 +980,24 @@ async function getModule(...modules) {
                 item?.gsErrorName ||
                 item?.gsEventName ||
                 item?.gsDirectiveName;
-            if(nk) flat[nk] = item;
+
+            if (n) flat[n] = item;
         }
     }
 
-    // case (1) — structured arrays
-    flattenArr(m.vars);
-    flattenArr(m.funcs);
-    flattenArr(m.methods);
-    flattenArr(m.classes);
-    flattenArr(m.types);
-    flattenArr(m.props);
-    flattenArr(m.mods);
-    flattenArr(m.errors);
-    flattenArr(m.events);
-    flattenArr(m.operators);
-    flattenArr(m.directives);
-
-    // case (2) — flattened object (take everything except ghostmodule)
-    for(const [k, v] of Object.entries(m)) {
-        if(k == "ghostmodule") continue;
-        // avoid overwriting array-derived entries, keep whichever exists
-        if(!(k in flat)) flat[k] = v;
+    for (const [k, v] of Object.entries(moduleObj.exports)) {
+        if (k !== "ghostmodule" && !(k in flat)) {
+            flat[k] = v;
+        }
     }
 
-    // If the module didn't provide ghostmodule meta, create a default
-    const meta = m.ghostmodule || {
+    const meta = moduleObj.exports.ghostmodule || {
         name,
         defroot: name,
         reqroot: true
     };
 
-    return {
-        meta,
-        exports: flat
-    };
+    return { meta, exports: flat };
 }
 
 function runFunc(func, ...args) {

@@ -1,1 +1,2 @@
-import ghost.ghost
+import ghost
+print("hello")
