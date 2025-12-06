@@ -4,6 +4,9 @@ This is the home of the GhostScript language!
 # IMPORTANT
 Note that GhostScript **is not development ready**.\
 If you want to use GS in a development environment, please come back when v1.0.0 is released.\
+I apologize for the inconvenience.\
+There is currently an ongoing error with the better import system.\
+I am investigating it and implmenting a fix.\
 I apologize for the inconvenience.
 
 # About
