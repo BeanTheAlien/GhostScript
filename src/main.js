@@ -7,6 +7,14 @@ const AutoDebuggerAPI = require("../api/AutoDebugger/autodebugger.js");
 const ContextAwareness = new ContextAwarenessAPI.ContextAwarenessAPI();
 const AutoDebugger = new AutoDebuggerAPI.AutoDebuggerAPI();
 
+class HTTPError extends Error {
+    constructor(response, url) {
+        const message = `HTTP error: ${response.status} (${response.statusText}) (url: ${url})`;
+        super(message);
+        this.name = "HTTPError";
+    }
+}
+
 const [,, ...args] = process.argv;
 function hasFlag(flag) {
     return args.includes(`--${flag}`);
@@ -47,6 +55,7 @@ var runtime = {
     }
 };
 var moduleDev = null;
+const raw = "https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost";
 
 async function main() {
     //const json = fs.readFileSync("grammar.json", "utf8");
@@ -177,6 +186,11 @@ function tokenize(script) {
             i++;
             continue;
         }
+        if(char == ";") {
+            tokens.push({ id: "semi", val: char });
+            i++;
+            continue;
+        }
 
         if(char == "(" || char == ")") {
             const type = char == "(" ? "lparen" : "rparen";
@@ -210,6 +224,25 @@ function tokenize(script) {
     }
     return tokens;
 }
+function inject(m) {
+    // always keep module object available
+    runtime.modules[m.meta.name] = m;
+    // if reqroot is false, inject exported names into runtime.scope
+    if(m.meta && m.meta.reqroot == false) {
+        for(const [k, v] of Object.entries(m.exports)) {
+            // avoid clobbering existing names unless you want to
+            if(runtime.scope[k]) {
+                console.warn(`Skipping import of '${k}' from ${m.meta.name}: name conflict in global scope`);
+                continue;
+            }
+            runtime.scope[k] = v;
+        }
+    } else {
+        // else expose under default root name
+        const rootName = m.meta.defroot;
+        runtime.scope[rootName] = m.exports;
+    }
+}
 async function parser(tokens) {
     let i = 0;
     while(i < tokens.length) {
@@ -217,30 +250,15 @@ async function parser(tokens) {
         if(tk.id == "keyword" && tk.val == "import") {
             const imp = parseImport(tokens, i);
             if(!imp.module.length) throw new Error("Unexpected termination of import.");
+            console.log(imp.module);
             // const modName = tokens[i+1].val;
-            const lib = await getModule(imp.module);
+            const lib = await getModule(...imp.module);
             const impName = imp.module.join(".");
-            if(!lib) {
-                console.error(`Could not load module '${impName}'`);
-                break;
-            }
-            // always keep module object available
-            runtime.modules[impName] = lib;
-            // if reqroot is false, inject exported names into runtime.scope
-            if(lib.meta && lib.meta.reqroot == false) {
-                for(const [k, v] of Object.entries(lib.exports)) {
-                    // avoid clobbering existing names unless you want to
-                    if(runtime.scope[k]) {
-                        console.warn(`Skipping import of '${k}' from ${impName}: name conflict in global scope`);
-                        continue;
-                    }
-                    runtime.scope[k] = v;
-                }
-            } else {
-                // else expose under default root name
-                const rootName = lib.meta.defroot || impName;
-                runtime.scope[rootName] = lib.exports;
-            }
+            // if(!lib) {
+            //     console.error(`Could not load module '${impName}'`);
+            //     break;
+            // }
+            if(lib != 0) inject(lib);
             // i += 2;
             i = imp.next;
             continue;
@@ -533,6 +551,7 @@ function parsePrim(tokens, i) {
         return { node: block.node, next: block.next };
     }
     if(token.id == "not") return { node: { type: "Not", val: token.val }, next: i + 1 };
+    if(token.id == "semi") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
 function parseArguments(tokens, i) {
@@ -550,7 +569,7 @@ function parseImport(tokens, i) {
     const module = [];
     // skip import statement
     i++;
-    while(i < tokens.length && (tokens[i].id == "id" || tokens[i].id == "dot")) {
+    while(i < tokens.length && (tokens[i].id == "id" || tokens[i].id == "dot") && tokens[i].id != "semi") {
         const tk = tokens[i];
         if(tk.id == "dot") {
             i++;
@@ -832,18 +851,48 @@ async function compile(tokens) {
 //     return module.exports;
 //   };
 // }
-async function fetchModuleDev() {
+async function fetchRaw(url) {
     try {
-        const res = await fetch("https://beanthealien.github.io/ghost/dev/module_dev.js");
-        if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
-        const module = { exports: {} };
-        const js = await res.text();
-        const wrapped = new Function("module", "exports", js);
-        wrapped(module, module.exports);
-        moduleDev = module.exports;
+        const realURL = `${raw}/${url}`;
+        const res = await fetch(realURL);
+        if(!res.ok) throw new HTTPError(res, realURL);
+        const text = await res.text();
+        return text;
     } catch(e) {
-        console.log(e);
+        console.error(e);
     }
+}
+async function fetchjson(url) {
+    try {
+        const realURL = `${raw}/modules/${url}/index.json`;
+        const res = await fetch(realURL);
+        if(!res.ok) throw new HTTPError(res, realURL);
+        const json = await res.json();
+        return json;
+    } catch(e) {
+        console.error(e);
+    }
+}
+async function fetchModuleDev() {
+    const js = await fetchRaw("dev/module_dev.js");
+    const module = { exports: {} };
+    const wrapped = new Function("module", "exports", js);
+    wrapped(module, module.exports);
+    moduleDev = module.exports;
+}
+async function hasRemote(url) {
+    try {
+        const res = await fetch(`${raw}/${url}`);
+        return res.ok;
+    } catch(e) {
+        console.error(e);
+    }
+}
+async function hasJSON(url) {
+    return await hasRemote(`modules/${url}/index.json`);
+}
+async function hasFile(url) {
+    return await hasRemote(`modules/${url}.js`);
 }
 // async function getFile(root, name) {
 //     try {
@@ -855,15 +904,93 @@ async function fetchModuleDev() {
 //         console.error(e);
 //     }
 // }
-function baseURL() {
-    return "https://beanthealien.github.io/ghost/modules";
-}
 
-async function getModule(...segments) {
+async function getModule(...parts) {
     if(!moduleDev) await fetchModuleDev();
-    const logicalPath = segments.join("/");
-    const visited = new Set();
-    return await loadRemoteModule(segments, logicalPath, visited);
+    const url = parts.join("/");
+    // check if the URL has a index.json file
+    if(await hasJSON(url)) {
+        // recurse through all the files
+        const index = await fetchjson(url);
+        for(const f of index.files) {
+            console.log(runtime.scope.ghost);
+            // retrieve the file (removes '.js' ending)
+            console.log(`loading: ${f}`);
+            const file = await getModule(url, f.slice(0, -3));
+            console.log(`injecting: ${f}`);
+            inject(file);
+        }
+        return 0;
+    }
+    // check if the file is a single JS file
+    if(await hasFile(url)) {
+        // get the file and its content
+        const js = await fetchRaw(`modules/${url}.js`);
+        const module = { exports: {} };
+        const wrapped = new Function("require", "module", "exports", "runtime", "module_dev", js);
+        wrapped(require, module, module.exports, runtime, moduleDev);
+
+        const m = module.exports || {};
+
+        // Build "flat" exports object that runtime expects.
+        // Support two cases:
+        //  1) module exported structured arrays: { funcs: [...], methods: [...], ... }
+        //  2) module already flattened: { wait: GSFunc, print: GSFunc, ghostmodule: {...} }
+        const flat = {};
+    
+        // Helper to flatten arrays of GS* objects into flat[name] = object
+        function flattenArr(arr) {
+            if(!Array.isArray(arr)) return;
+            for(const item of arr) {
+                const nk =
+                    item?.gsVarName ||
+                    item?.gsFuncName ||
+                    item?.gsMethodName ||
+                    item?.gsClassName ||
+                    item?.gsTypeName ||
+                    item?.gsPropName ||
+                    item?.gsModifierName ||
+                    item?.gsOperatorName ||
+                    item?.gsErrorName ||
+                    item?.gsEventName ||
+                    item?.gsDirectiveName;
+                if(nk) flat[nk] = item;
+            }
+        }
+    
+        // case (1) — structured arrays
+        flattenArr(m.vars);
+        flattenArr(m.funcs);
+        flattenArr(m.methods);
+        flattenArr(m.classes);
+        flattenArr(m.types);
+        flattenArr(m.props);
+        flattenArr(m.mods);
+        flattenArr(m.errors);
+        flattenArr(m.events);
+        flattenArr(m.operators);
+        flattenArr(m.directives);
+
+        // case (2) — flattened object (take everything except ghostmodule)
+        for(const [k, v] of Object.entries(m)) {
+            if(k == "ghostmodule") continue;
+            // avoid overwriting array-derived entries, keep whichever exists
+            if(!(k in flat)) flat[k] = v;
+        }
+
+        const meta = m.ghostmodule || {
+            name: parts.join("."),
+            defroot: parts.join("."),
+            reqroot: true
+        };
+
+        return {
+            meta,
+            exports: flat
+        };
+    }
+
+    throw new Error(`Could not find module '${url}'.`);
 }
 
 async function loadRemoteModule(segments, logicalPath, visited) {

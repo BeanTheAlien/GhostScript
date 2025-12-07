@@ -143,6 +143,7 @@ Try running your script - you should see "Hello, World!".
 - Started implementing a better import system. (04/12/2025)
 - Implemented logical operator handling. (04/12/2025)
 - Implemented better import system. (04/12/2025)
+- MAJOR: overhaul to better import system, fixed errors with better import system. (06/12/205)
 
 # Roadmap
 ~~- More comprehensive lexer/compiler.~~ (v0.0.6)

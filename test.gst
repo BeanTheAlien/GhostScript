@@ -1,7 +1,3 @@
-import ghost
-var a = undefined
-var b = 42
+import ghost;
 
-if(a || !b) {
-    print("Hello, World!")
-}
+println("hello world")
