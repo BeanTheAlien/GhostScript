@@ -526,7 +526,7 @@ function parseMath(tokens, i) {
         }
         i++;
     }
-    return { node: { type: "Literal", val: n }, next: i + 1 };
+    return { n, next: i + 1 };
 }
 function parseArrAccess(tokens, i) {
     let poses = [];
@@ -767,7 +767,7 @@ function interp(node) {
             let els = [];
             if(!Object.hasOwn(runtime.scope, arr)) throw new Error("Cannot index undefined.");
             const entry = runtime.scope[arr];
-            if(!Array.isArray(entry)) {
+            if(!Array.isArray(entry) && typeof entry != "string") {
                 console.warn(`Warning: attempting to index non-array '${arr}'. (content: ${JSON.stringify(entry)})`);
                 const string = JSON.stringify(entry);
                 for(let i = 0; i < poses.length; i++) els.push(string[poses[i]]);
@@ -788,12 +788,12 @@ function interp(node) {
                 // to prevent infinite loops, use a loop tracker
                 // where `n` is the number of times its looped
                 // to allow infinite loops, toggle infinite buffering
-                // in config.json (see https://github.com/BeanTheAlien/GhostScript/wiki/infinite-buffering)
+                // in config.json (see https://github.com/BeanTheAlien/GhostScript/wiki/infinite_buffering)
                 let n = 0;
                 while(resolveCond(headerCond)) {
-                    // if it exceeds 999M, its considered an infinite loop and it should break
-                    if(n > 999999999) {
-                        console.log(`While loop max iterations reached. (condition: '${headerCond}')`);
+                    // if it exceeds 1M, its considered an infinite loop and it should break
+                    if(n > 1000000) {
+                        console.log(`While loop max iterations reached. (condition: '${JSON.stringify(headerCond)}')`);
                         break;
                     }
                     exec();
