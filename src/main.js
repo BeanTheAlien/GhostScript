@@ -250,7 +250,6 @@ async function parser(tokens) {
         if(tk.id == "keyword" && tk.val == "import") {
             const imp = parseImport(tokens, i);
             if(!imp.module.length) throw new Error("Unexpected termination of import.");
-            console.log(imp.module);
             // const modName = tokens[i+1].val;
             const lib = await getModule(...imp.module);
             const impName = imp.module.join(".");
@@ -913,11 +912,8 @@ async function getModule(...parts) {
         // recurse through all the files
         const index = await fetchjson(url);
         for(const f of index.files) {
-            console.log(runtime.scope.ghost);
             // retrieve the file (removes '.js' ending)
-            console.log(`loading: ${f}`);
             const file = await getModule(url, f.slice(0, -3));
-            console.log(`injecting: ${f}`);
             inject(file);
         }
         return 0;
