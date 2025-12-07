@@ -133,7 +133,7 @@ function tokenize(script) {
                 "var", "import", "if", "else", "while", "return", "class", "function", "method", "prop"
             ];
             const mods = [
-                "desire"
+                "desire", "const", "dedicated"
             ];
             const type = keywords.includes(val) ? "keyword" : mods.includes(val) ? "mod" : "id";
             tokens.push({ id: type, val });
@@ -349,7 +349,7 @@ function parseBlockHeader(tokens, i) {
                     i++;
                     continue;
                 }
-                curArg.push(tokens[i].val);
+                curArg.push(tokens[i]);
                 i++;
             }
             if(curArg.length) headerParams.push(curArg);
@@ -395,9 +395,50 @@ function parseBlockHeader(tokens, i) {
     }
     throw new Error(`Unknown block header '${header}'.`);
 }
+function parseParam(param) {
+    let i = 0;
+    const parsed = { dedicated: null, const: null, desire: null, type: null, name: null, val: null };
+    // mods will come first
+    const modsParsed = parseMods(param, i);
+    const mods = modsParsed.mods;
+    i = modsParsed.next;
+    parsed["mods"] = mods;
+    // GhostScript uses strict modifier positioning for params
+    // dedicated, const, desire, type
+    if(mods.length) {
+        let j = 0;
+        parsed["dedicated"] = mods[j] && mods[j] === "dedicated";
+        if(parsed["dedicated"]) j++;
+        parsed["const"] = mods[j] && mods[j] === "const";
+        if(parsed["const"]) j++;
+        parsed["desire"] = mods[j] && mods[j] === "desire";
+        if(parsed["desire"]) j++;
+        parsed["type"] = mods[j] && runtime.scope[mods[j]] instanceof moduleDev.GSType ? runtime.scope[mods[j]] : runtime.scope.entity;
+    } else {
+        parsed["dedicated"] = false;
+        parsed["const"] = false;
+        parsed["desire"] = false;
+        parsed["type"] = runtime.scope.entity;
+    }
+    // name will come after mods
+    const name = param[i].val;
+    i++;
+    parsed["name"] = name;
+    // possible eqls val
+    parsed["val"] = undefined;
+    if(param[i] && param[i].id == "eqls") {
+        if(param[i+1]) {
+            const val = param[i+1].val;
+            parsed["val"] = val;
+        } else {
+            throw new Error(`Unexpected termination of parameter. (got: '${param}')`);
+        }
+    }
+    return { ...parsed };
+}
 function parseMods(tokens, i) {
     let mods = [];
-    while(i < tokens.length && tokens[i].id == "mod") {
+    while(i < tokens.length && (tokens[i].id == "mod" || runtime.scope[tokens[i].val] instanceof moduleDev.GSType)) {
         mods.push(tokens[i].val);
         i++;
     }
@@ -686,18 +727,36 @@ function interp(node) {
             const body = bodyNode.node.val;
             //gsFuncDesire: boolean, gsFuncType: GSType, gsFuncName: string, gsFuncArgs: GSArg[], gsFuncBody: function
             //gsArgName: string, gsArgVal: Object, gsArgDesire: boolean, gsArgType: GSType
+            const ents = {};
             const gsf = new moduleDev.GSFunc({
                 gsFuncDesire: mods.includes("desire"),
                 gsFuncType: runtime.modules.ghost.exports.entity,
                 gsFuncName: name,
-                gsFuncArgs: params.map(p => new moduleDev.GSArg({
-                    gsArgName: p,
-                    gsArgVal: "",
-                    gsArgDesire: false,
-                    gsArgType: runtime.modules.ghost.exports.entity
-                })),
-                gsFuncBody: (p) => {
+                gsFuncArgs: params.map(p => {
+                    const parsed = parseParam(p);
+                    const arg = new moduleDev.GSArg({
+                        gsArgName: parsed.name,
+                        gsArgVal: parsed.val,
+                        gsArgDesire: parsed.desire,
+                        gsArgType: parsed.type
+                    });
+                    return arg;
+                }),
+                gsFuncBody: (...args) => {
+                    const formal = [...gsf.gsFuncArgs];
+                    formal.forEach((arg, i) => {
+                        const val = args[i] !== undefined ? args[i] : arg.gsArgVal;
+                        arg.gsArgVal = val;
+                    });
+                    formal.forEach(f => {
+                        if(Object.hasOwn(runtime.scope, f.gsArgName)) ents[f.gsArgName] = runtime.scope[f.gsArgName];
+                        runtime.scope[f.gsArgName] = f.gsArgVal;
+                    });
                     body.forEach(n => interp(n));
+                    formal.forEach(f => {
+                        if(Object.hasOwn(ents, f.gsArgName)) runtime.scope[f.gsArgName] = ents[f.gsArgName];
+                        else runtime.scope[f.gsArgName] = undefined;
+                    });
                 }
             });
             runtime.scope[name] = gsf;

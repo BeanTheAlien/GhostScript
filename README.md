@@ -4,9 +4,6 @@ This is the home of the GhostScript language!
 # IMPORTANT
 Note that GhostScript **is not development ready**.\
 If you want to use GS in a development environment, please come back when v1.0.0 is released.\
-I apologize for the inconvenience.\
-There is currently an ongoing error with the better import system.\
-I am investigating it and implmenting a fix.\
 I apologize for the inconvenience.
 
 # About
@@ -144,11 +141,14 @@ Try running your script - you should see "Hello, World!".
 - Implemented logical operator handling. (04/12/2025)
 - Implemented better import system. (04/12/2025)
 - MAJOR: overhaul to better import system, fixed errors with better import system. (06/12/205)
+- The params update is here! You can... delcare params! Also, funcs now respect the global scope. (07/12/2025)
 
 # Roadmap
-~~- More comprehensive lexer/compiler.~~ (v0.0.6)
-~~- Block statement parsing.~~ (v0.0.9)
-~~- Better import logic.~~ (v0.0.10)
-- Further variable support.\
-~~- Fix to not print the name of a variable if it was not defined.~~ (v0.0.9)
+- Further variable support.
+
+# Complete
+~~- More comprehensive lexer/compiler.~~ (v0.0.6)\
+~~- Block statement parsing.~~ (v0.0.9)\
+~~- Better import logic.~~ (v0.0.10)\
+~~- Fix to not print the name of a variable if it was not defined.~~ (v0.0.9)\
 ~~- Logical operator support.~~ (v0.0.10)
