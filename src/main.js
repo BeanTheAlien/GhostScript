@@ -808,6 +808,33 @@ function interp(node) {
             runtime.scope[name] = gsm;
             break;
         }
+        case "PropDeclaration": {
+            const { name, getProp, setProp, mods } = node.val;
+            // gsPropDesire: boolean, gsPropAttach: GSType|GSType[], gsPropName: string, gsPropGet: function, gsPropSet: function
+            //gsFuncDesire: boolean, gsFuncType: GSType, gsFuncName: string, gsFuncArgs: GSArg[], gsFuncBody: function
+            const gsp = new moduleDev.GSProp({
+                gsPropName: name,
+                gsPropDesire: mods.desire,
+                gsPropAttach: mods.attach,
+                gsPropGet: new GSFunc({
+                    gsPropDesire: false, gsFuncType: runtime.scope.entity,
+                    gsFuncName: "PROPERTY-GET", gsFuncArgs: [],
+                    gsFuncBody: getProp
+                }),
+                gsPropSet: new GSFunc({
+                    gsPropDesire: false, gsFuncType: runtime.scope.entity,
+                    gsFuncName: "PROPERTY-SET", gsFuncArgs: [
+                        new GSArg({
+                            gsArgName: "value",
+                            gsArgval: undefined,
+                            gsArgDesire: false,
+                            gsArgType: runtime.scope.entity
+                        })
+                    ],
+                    gsFuncBody: setProp
+                })
+            });
+        }
         
         case "ArrayAccess":
             const [arr, poses] = node.val;
