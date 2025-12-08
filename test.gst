@@ -1,4 +1,8 @@
 import ghost;
 
-// infinite loop
-while(true) {}
+method hello() {
+    println(target)
+}
+
+var foo = "bar"
+foo.hello()

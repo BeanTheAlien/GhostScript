@@ -407,11 +407,11 @@ function parseParam(param) {
     // dedicated, const, desire, type
     if(mods.length) {
         let j = 0;
-        parsed["dedicated"] = mods[j] && mods[j] === "dedicated";
+        parsed["dedicated"] = mods[j] && mods[j] == "dedicated";
         if(parsed["dedicated"]) j++;
-        parsed["const"] = mods[j] && mods[j] === "const";
+        parsed["const"] = mods[j] && mods[j] == "const";
         if(parsed["const"]) j++;
-        parsed["desire"] = mods[j] && mods[j] === "desire";
+        parsed["desire"] = mods[j] && mods[j] == "desire";
         if(parsed["desire"]) j++;
         parsed["type"] = mods[j] && runtime.scope[mods[j]] instanceof moduleDev.GSType ? runtime.scope[mods[j]] : runtime.scope.entity;
     } else {
@@ -562,11 +562,12 @@ function parsePrim(tokens, i) {
         }
         return { node: { type: "Declaration", val: name }, next: i + 2 };
     }
-    if(token.id == "keyword" && token.val == "function") {
+    if(token.id == "keyword" && (token.val == "function" || token.val == "method")) {
         const funcHeader = parseBlockHeader(tokens, i);
         const header = funcHeader.node.val;
         const funcBody = parseBlock(tokens, funcHeader.next);
-        return { node: { type: "FunctionDeclaration", val: [header, funcBody] }, next: funcBody.next + 1 };
+        const type = header == "function" ? "FunctionDeclaration" : "MethodDeclaration";
+        return { node: { type, val: [header, funcBody] }, next: funcBody.next + 1 };
     }
     if(token.id == "keyword" && (token.val == "if" || token.val == "while")) {
         const condHeader = parseBlockHeader(tokens, i);
@@ -672,7 +673,7 @@ function interp(node) {
                 }
 
                 console.error("CallExpression: method not found:", methodName, "on", targetValue, "node:", node);
-                throw new Error(`Method '${methodName}' not found on target`);
+                throw new Error(`Method '${methodName}' not found on target.`);
             }
 
             // Otherwise callee is not a member expression (e.g. Identifier or nested CallExpression)
@@ -721,7 +722,7 @@ function interp(node) {
             node.val.forEach(v => interp(v));
             break;
         
-        case "FunctionDeclaration":
+        case "FunctionDeclaration": {
             const { type, mods, name, params } = node.val[0];
             const bodyNode = node.val[1];
             const body = bodyNode.node.val;
@@ -730,7 +731,7 @@ function interp(node) {
             const ents = {};
             const gsf = new moduleDev.GSFunc({
                 gsFuncDesire: mods.includes("desire"),
-                gsFuncType: runtime.modules.ghost.exports.entity,
+                gsFuncType: runtime.scope.entity,
                 gsFuncName: name,
                 gsFuncArgs: params.map(p => {
                     const parsed = parseParam(p);
@@ -755,12 +756,57 @@ function interp(node) {
                     body.forEach(n => interp(n));
                     formal.forEach(f => {
                         if(Object.hasOwn(ents, f.gsArgName)) runtime.scope[f.gsArgName] = ents[f.gsArgName];
-                        else runtime.scope[f.gsArgName] = undefined;
+                        else delete runtime.scope[f.gsArgName];
                     });
                 }
             });
             runtime.scope[name] = gsf;
             break;
+        }
+        case "MethodDeclaration": {
+            const { type, mods, name, params } = node.val[0];
+            const bodyNode = node.val[1];
+            const body = bodyNode.node.val;
+            //gsMethodDesire: boolean, gsMethodType: GSType, gsMethodName: string, gsMethodAttach: GSType|GSType[], gsMethodArgs: GSArg[], gsMethodBody: function
+            //gsArgName: string, gsArgVal: Object, gsArgDesire: boolean, gsArgType: GSType
+            const ents = {};
+            const gsm = new moduleDev.GSMethod({
+                gsMethodDesire: mods.includes("desire"),
+                gsMethodType: runtime.scope.entity,
+                gsMethodName: name,
+                gsMethodAttach: runtime.scope.entity,
+                gsMethodArgs: params.map(p => {
+                    const parsed = parseParam(p);
+                    const arg = new moduleDev.GSArg({
+                        gsArgName: parsed.name,
+                        gsArgVal: parsed.val,
+                        gsArgDesire: parsed.desire,
+                        gsArgType: parsed.type
+                    });
+                    return arg;
+                }),
+                gsMethodBody: (target, ...args) => {
+                    const formal = [...gsm.gsMethodArgs];
+                    formal.forEach((arg, i) => {
+                        const val = args[i] !== undefined ? args[i] : arg.gsArgVal;
+                        arg.gsArgVal = val;
+                    });
+                    runtime.scope["target"] = target;
+                    formal.forEach(f => {
+                        if(Object.hasOwn(runtime.scope, f.gsArgName)) ents[f.gsArgName] = runtime.scope[f.gsArgName];
+                        runtime.scope[f.gsArgName] = f.gsArgVal;
+                    });
+                    body.forEach(n => interp(n));
+                    formal.forEach(f => {
+                        if(Object.hasOwn(ents, f.gsArgName)) runtime.scope[f.gsArgName] = ents[f.gsArgName];
+                        else delete runtime.scope[f.gsArgName];
+                    });
+                    delete runtime.scope["target"];
+                }
+            });
+            runtime.scope[name] = gsm;
+            break;
+        }
         
         case "ArrayAccess":
             const [arr, poses] = node.val;
@@ -1259,6 +1305,14 @@ function findFunction(name) {
 }
 
 function findMethod(targetType, name) {
+    // resolve if it is in the public scope
+    if(Object.hasOwn(runtime.scope, name) && runtime.scope[name] instanceof moduleDev.GSMethod) {
+        const m = runtime.scope[name];
+        if(Array.isArray(m.gsMethodAttach)) {
+            if(m.gsMethodAttach.some(t => typeCheck(t, targetType))) return m;
+        } else if(typeCheck(m.gsMethodAttach, targetType)) return m;
+    }
+
     for(const modName in runtime.modules) {
         const mod = runtime.modules[modName];
         if(!mod.meta.reqroot) {
