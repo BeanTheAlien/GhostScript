@@ -144,6 +144,7 @@ Try running your script - you should see "Hello, World!".
 - The params update is here! You can... delcare params! Also, funcs now respect the global scope. (07/12/2025)
 - Decreased infinite loop detection count to 1M. (07/12/2025)
 - Started implementing method support. (07/12/2025)
+- Added `target` to keywords. (08/12/2025)
 
 # Roadmap
 - Further variable support.
