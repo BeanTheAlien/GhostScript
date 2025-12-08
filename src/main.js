@@ -130,7 +130,8 @@ function tokenize(script) {
                 val += script[i++];
             }
             const keywords = [
-                "var", "import", "if", "else", "while", "return", "class", "function", "method", "prop"
+                "var", "import", "if", "else", "while", "return", "class",
+                "function", "method", "prop", "target"
             ];
             const mods = [
                 "desire", "const", "dedicated"
