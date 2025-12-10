@@ -146,6 +146,7 @@ Try running your script - you should see "Hello, World!".
 - Started implementing method support. (07/12/2025)
 - Added `target` to keywords. (08/12/2025)
 - Added parseCond to hopefully resolve conditional parsing outside of conditional headers. (10/12/2025)
+- Made import non-greedy. (10/12/205)
 
 # Roadmap
 - Further variable support.

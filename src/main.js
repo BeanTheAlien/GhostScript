@@ -632,14 +632,20 @@ function parseImport(tokens, i) {
     const module = [];
     // skip import statement
     i++;
-    while(i < tokens.length && (tokens[i].id == "id" || tokens[i].id == "dot") && tokens[i].id != "semi") {
+    // use a counter to make it non-greedy
+    // if dot is hit, continue consuming (ie, ghost.ghost)
+    // once no more dots are found, thats the full module
+    let c = 1;
+    while(i < tokens.length && c > 0 && (tokens[i].id == "id" || tokens[i].id == "dot")) {
         const tk = tokens[i];
         if(tk.id == "dot") {
+            c++;
             i++;
             continue;
         }
         module.push(tk.val);
         i++;
+        c--;
     }
     return { module, next: i };
 }
