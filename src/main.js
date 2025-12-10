@@ -541,6 +541,19 @@ function parseArrAccess(tokens, i) {
     }
     throw new Error("Unterminated array index. Expected ']'.");
 }
+function parseCond(tokens, i) {
+    // skip over inital opr
+    i++;
+    // terminate early (resolveCond will handle)
+    if(!tokens[i]) return i;
+    while(i < tokens.length) {
+        // greedily find all supported types for a conditional
+        // then return once they are all found with the next position
+        if(["string", "num", "id", "opr"].includes(tokens[i].id)) i++;
+        else return i;
+    }
+    return i;
+}
 function parsePrim(tokens, i) {
     const token = tokens[i];
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
@@ -579,6 +592,14 @@ function parsePrim(tokens, i) {
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "lbracket") {
         const access = parseArrAccess(tokens, i);
         return { node: { type: "ArrayAccess", val: [token.val, access.poses] }, next: access.next };
+    }
+    // to resolve operator support extension, check if the following value is an opr
+    // supporting multiple possible lhs types
+    // returns a literal boolean value
+    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && tokens[i+1].id == "opr") {
+        const expr = parseCond(tokens, i);
+        const res = resolveCond(tokens.slice(i, expr + 1));
+        return { node: { type: "Literal", val: res }, next: expr + 1 };
     }
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
@@ -1440,11 +1461,11 @@ function resolveCond(cond) {
     if(opr == ">=") return lhs >= rhs;
 }
 
-function preprocess(tokens) {
-    // this should handle: variables, functions, methods, properties, types, classes, imports
-    let i = 0;
-    while(i < tokens.length) {}
-}
+// function preprocess(tokens) {
+//     // this should handle: variables, functions, methods, properties, types, classes, imports
+//     let i = 0;
+//     while(i < tokens.length) {}
+// }
 
 // var ghostMemory = { "variables": {}, "functions": {}, "methods": {}, "properties": {}, "types": {}, "classes": {} };
 // var ghostVariables = {};
