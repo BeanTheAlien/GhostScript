@@ -148,6 +148,9 @@ Try running your script - you should see "Hello, World!".
 - Added parseCond to hopefully resolve conditional parsing outside of conditional headers. (10/12/2025)
 - Made import non-greedy. (10/12/205)
 - Added @huggingface/transforms to start implementing Auto Debugger API. (11/12/2025)
+- Updated number matching to allow for a negative to proceed it. (12/12/2025)
+- Updated array access to use `Array.prototype.at` to support negative indexing of arrays. (12/12/2025)
+- Updated import system to check for a local file. To ensure local file import, use a string as the name of the import. (12/12/2025)
 
 # Roadmap
 - Further variable support.
