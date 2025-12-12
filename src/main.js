@@ -1220,7 +1220,60 @@ async function getModule(...parts) {
         };
     }
     // run a system search to locate the file
-    const { stdout, stderr } = await execAsync();
+    const { stdout, stderr } = await execAsync(`where /R C:\\ ${url}`);
+    if(stderr.length) console.error(stderr);
+    else {
+        const js = fs.readFileSync(stdouut, "utf8");
+        const module = { exports: {} };
+        const wrapped = new Function("require", "module", "exports", "runtime", "module_dev", js);
+        wrapped(require, module, module.exports, runtime, moduleDev);
+        const m = module.exports || {};
+        const flat = {};
+        function flattenArr(arr) {
+            if(!Array.isArray(arr)) return;
+            for(const item of arr) {
+                const nk =
+                    item?.gsVarName ||
+                    item?.gsFuncName ||
+                    item?.gsMethodName ||
+                    item?.gsClassName ||
+                    item?.gsTypeName ||
+                    item?.gsPropName ||
+                    item?.gsModifierName ||
+                    item?.gsOperatorName ||
+                    item?.gsErrorName ||
+                    item?.gsEventName ||
+                    item?.gsDirectiveName;
+                if(nk) flat[nk] = item;
+            }
+        }
+        flattenArr(m.vars);
+        flattenArr(m.funcs);
+        flattenArr(m.methods);
+        flattenArr(m.classes);
+        flattenArr(m.types);
+        flattenArr(m.props);
+        flattenArr(m.mods);
+        flattenArr(m.errors);
+        flattenArr(m.events);
+        flattenArr(m.operators);
+        flattenArr(m.directives);
+        for(const [k, v] of Object.entries(m)) {
+            if(k == "ghostmodule") continue;
+            if(!(k in flat)) flat[k] = v;
+        }
+        const meta = m.ghostmodule || {
+            name: parts.join("."),
+            defroot: parts.join("."),
+            reqroot: true
+        };
+        await resolveDeps({ meta });
+
+        return {
+            meta,
+            exports: flat
+        };
+    }
 
     throw new Error(`Could not find module '${url}'.`);
 }
