@@ -1053,6 +1053,12 @@ async function hasJSON(url) {
 async function hasFile(url) {
     return await hasRemote(`modules/${url}.js`);
 }
+function isLocal(dir) {
+    return fs.existsSync(path.join(__dirname, dir));
+}
+function getLocal(dir) {
+    return fs.readFileSync(path.join(__dirname, dir), "utf8");
+}
 // async function getFile(root, name) {
 //     try {
 //         const res = await fetch(raw(`modules/${root}/${name}.js`));
@@ -1063,7 +1069,18 @@ async function hasFile(url) {
 //         console.error(e);
 //     }
 // }
-
+async function resolveDeps(file) {
+    if(file.meta && file.meta.deps) {
+        if(Array.isArray(file.meta.deps)) {
+            for(const d of file.meta.deps) {
+                // resolves file vs directory
+                // possible to depend on an entire directory
+                const dep = await getModule(raw, d.endsWith(".js") ? d.slice(0, -3) : d);
+                inject(dep);
+            }
+        } else throw new Error(`Invalid type received for dependencys array. (expected: 'array', got: '${typeof file.meta.deps}')`);
+    }
+}
 async function getModule(...parts) {
     if(!moduleDev) await fetchModuleDev();
     const url = parts.join("/");
@@ -1075,6 +1092,7 @@ async function getModule(...parts) {
             // retrieve the file (removes '.js' ending)
             const file = await getModule(url, f.slice(0, -3));
             inject(file);
+            await resolveDeps(file);
         }
         return 0;
     }
@@ -1139,6 +1157,60 @@ async function getModule(...parts) {
             defroot: parts.join("."),
             reqroot: true
         };
+        await resolveDeps({ meta });
+
+        return {
+            meta,
+            exports: flat
+        };
+    }
+    // check for a local file
+    if(isLocal(url)) {
+        const js = getLocal(url);
+        const module = { exports: {} };
+        const wrapped = new Function("require", "module", "exports", "runtime", "module_dev", js);
+        wrapped(require, module, module.exports, runtime, moduleDev);
+        const m = module.exports || {};
+        const flat = {};
+        function flattenArr(arr) {
+            if(!Array.isArray(arr)) return;
+            for(const item of arr) {
+                const nk =
+                    item?.gsVarName ||
+                    item?.gsFuncName ||
+                    item?.gsMethodName ||
+                    item?.gsClassName ||
+                    item?.gsTypeName ||
+                    item?.gsPropName ||
+                    item?.gsModifierName ||
+                    item?.gsOperatorName ||
+                    item?.gsErrorName ||
+                    item?.gsEventName ||
+                    item?.gsDirectiveName;
+                if(nk) flat[nk] = item;
+            }
+        }
+        flattenArr(m.vars);
+        flattenArr(m.funcs);
+        flattenArr(m.methods);
+        flattenArr(m.classes);
+        flattenArr(m.types);
+        flattenArr(m.props);
+        flattenArr(m.mods);
+        flattenArr(m.errors);
+        flattenArr(m.events);
+        flattenArr(m.operators);
+        flattenArr(m.directives);
+        for(const [k, v] of Object.entries(m)) {
+            if(k == "ghostmodule") continue;
+            if(!(k in flat)) flat[k] = v;
+        }
+        const meta = m.ghostmodule || {
+            name: parts.join("."),
+            defroot: parts.join("."),
+            reqroot: true
+        };
+        await resolveDeps({ meta });
 
         return {
             meta,
