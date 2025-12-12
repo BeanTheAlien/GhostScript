@@ -114,7 +114,7 @@ function tokenize(script) {
         }
 
         // numbers
-        if(/\d/.test(char)) {
+        if(/\-?\d/.test(char)) {
             let val = "";
             while(/\d|\./.test(script[i])) {
                 val += script[i++];
