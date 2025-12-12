@@ -871,8 +871,8 @@ function interp(node) {
             if(!Array.isArray(entry) && typeof entry != "string") {
                 console.warn(`Warning: attempting to index non-array '${arr}'. (content: ${JSON.stringify(entry)})`);
                 const string = JSON.stringify(entry);
-                for(let i = 0; i < poses.length; i++) els.push(string[poses[i]]);
-            } else for(let i = 0; i < poses.length; i++) els.push(entry[poses[i]]);
+                for(let i = 0; i < poses.length; i++) els.push(string.at(poses[i]));
+            } else for(let i = 0; i < poses.length; i++) els.push(entry.at(poses[i]));
             return els;
         
         case "ConditionalHeader":
