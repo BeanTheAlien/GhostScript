@@ -1,3 +1,17 @@
+const huggingface = require("@huggingface/transformers");
+const pipe = await huggingface.pipeline("text-generation", "Qwen/Qwen2.5-Coder-7B-Instruct", {
+    dtype: "q4"
+});
+// role, content
+// role: system | user
+const initMessage = ``;
+const messages = [
+    { role: "system", content: "Hello, Qwen! Your goal is to find errors and provide solutions within the user's script.\nIt is important for me to recognize that this is a new programming language that has strange syntax - so you won't get everything right.\nThat's ok, just try your best with the provided materials!\nI will note that, if you can, try and suggest changes that are within the realm of the user's ability." }
+];
+
+const out = await pipe(messages, { max_new_tokens: 128 });
+console.log(out[0].generated_text.at(-1).content);
+
 class AutoDebuggerAPI {
     constructor() {
         this.tokens = null;
