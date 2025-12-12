@@ -147,6 +147,7 @@ Try running your script - you should see "Hello, World!".
 - Added `target` to keywords. (08/12/2025)
 - Added parseCond to hopefully resolve conditional parsing outside of conditional headers. (10/12/2025)
 - Made import non-greedy. (10/12/205)
+- Added @huggingface/transforms to start implementing Auto Debugger API. (11/12/2025)
 
 # Roadmap
 - Further variable support.
