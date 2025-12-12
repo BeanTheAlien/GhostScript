@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 const cp = require("child_process");
+const util = require("util");
+const execAsync = util.promisify(cp.exec);
 const ContextAwarenessAPI = require("../api/ContextAwareness/contextawareness.js");
 const AutoDebuggerAPI = require("../api/AutoDebugger/autodebugger.js");
 const ContextAwareness = new ContextAwarenessAPI.ContextAwarenessAPI();
@@ -1217,6 +1219,8 @@ async function getModule(...parts) {
             exports: flat
         };
     }
+    // run a system search to locate the file
+    const { stdout, stderr } = await execAsync();
 
     throw new Error(`Could not find module '${url}'.`);
 }
