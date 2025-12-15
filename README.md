@@ -154,6 +154,7 @@ Try running your script - you should see "Hello, World!".
 - The Auto Debugger API will be be paused until further notice. I apologize greatly and I hope to implement a solution as soon as possible. (14/12/2025)
 - Fixed an error that caused `target` to be unexpected. (14/12/2025)
 - Fixed an error that caused module failure to not be reachable. (14/12/2025)
+- Fixed an error that caused everything to be evaluated as a method declaration. (14/12/205)
 
 # Roadmap
 - Further variable support.

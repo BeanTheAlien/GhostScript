@@ -580,7 +580,7 @@ function parsePrim(tokens, i) {
         const funcHeader = parseBlockHeader(tokens, i);
         const header = funcHeader.node.val;
         const funcBody = parseBlock(tokens, funcHeader.next);
-        const type = header == "function" ? "FunctionDeclaration" : "MethodDeclaration";
+        const type = header.type == "function" ? "FunctionDeclaration" : "MethodDeclaration";
         return { node: { type, val: [header, funcBody] }, next: funcBody.next + 1 };
     }
     if(token.id == "keyword" && (token.val == "if" || token.val == "while")) {
