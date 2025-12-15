@@ -1176,8 +1176,8 @@ async function getModule(...parts) {
     // run a system search to locate the file
     const { stdout, stderr } = await execAsync(`where /R C:\\ ${url}`);
     if(stderr.length) throw new Error(stderr);
-    else {
-        const js = fs.readFileSync(stdouut, "utf8");
+    else if(stdout.length) {
+        const js = fs.readFileSync(stdout, "utf8");
         return await processImport(js);
     }
 

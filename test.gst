@@ -1,4 +1,4 @@
-import ghost;
+import ghost
 
 method hello() {
     println(target)

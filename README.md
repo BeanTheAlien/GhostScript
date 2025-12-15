@@ -152,6 +152,8 @@ Try running your script - you should see "Hello, World!".
 - Updated array access to use `Array.prototype.at` to support negative indexing of arrays. (12/12/2025)
 - Updated import system to check for a local file. To ensure local file import, use a string as the name of the import. (12/12/2025)
 - The Auto Debugger API will be be paused until further notice. I apologize greatly and I hope to implement a solution as soon as possible. (14/12/2025)
+- Fixed an error that caused `target` to be unexpected. (14/12/2025)
+- Fixed an error that caused module failure to not be reachable. (14/12/2025)
 
 # Roadmap
 - Further variable support.
