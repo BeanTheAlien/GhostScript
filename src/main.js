@@ -16,6 +16,12 @@ class HTTPError extends Error {
         this.name = "HTTPError";
     }
 }
+class UnexpectedTokenError extends Error {
+    constructor(token) {
+        super(`Unexpected token '${token.val}' with id '${token.id}'. (ln ${token.ln}, col ${token.col})`);
+        this.name = "UnexpectedTokenError";
+    }
+}
 
 const [,, ...args] = process.argv;
 function hasFlag(flag) {
@@ -693,7 +699,7 @@ function parsePrim(tokens, i) {
     if(token.id == "not") return { node: { type: "Not", val: token.val }, next: i + 1 };
     if(token.id == "semi") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "keyword" && token.val == "target") return { node: { type: "Identifier", val: token.val  }, next: i + 1 };
-    throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id}) (at ln ${token.ln}, col ${token.col})`);
+    throw new UnexpectedTokenError(token);
 }
 function parseArguments(tokens, i) {
     const args = [];
