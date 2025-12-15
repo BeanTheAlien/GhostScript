@@ -48,25 +48,30 @@ if(fs.existsSync("C:\\GhostScript")) {
     config = JSON.parse(fs.readFileSync("C:\\GhostScript\\config.json"));
 }
 
-// class Runtime {
-//     constructor() {
-//         this.modules = {};
-//         this.scope = {};
-//     }
-//     has(k) {
-//         return Object.hasOwn(this.scope, k);
-//     }
-// }
-
-var runtime = {
-    modules: {},
-    scope: {
-        "true": true,
-        "false": false,
-        "null": null,
-        "undefined": undefined
+class Runtime {
+    constructor() {
+        this.modules = {};
+        this.scope = {};
     }
-};
+    has(k) {
+        return Object.hasOwn(this.scope, k);
+    }
+    get(k) {
+        return this.scope[k];
+    }
+    add(nm, vl) {
+        this.scope[nm] = vl;
+    }
+    rem(nm) {
+        delete this.scope[nm];
+    }
+}
+
+var runtime = new Runtime();
+runtime.add("true", true);
+runtime.add("false", false);
+runtime.add("null", null);
+runtime.add("undefined", undefined);
 var moduleDev = null;
 const raw = "https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost";
 
@@ -746,7 +751,7 @@ function interp(node) {
 
         case "Identifier":
             // return actual runtime binding if present
-            if(Object.hasOwn(runtime.scope, node.val)) return runtime.scope[node.val];
+            if(runtime.has(node.val)) return runtime.scope[node.val];
             // if it doesnt exist, return `undefined`
             return undefined;
 
@@ -862,7 +867,7 @@ function interp(node) {
                         arg.gsArgVal = val;
                     });
                     formal.forEach(f => {
-                        if(Object.hasOwn(runtime.scope, f.gsArgName)) ents[f.gsArgName] = runtime.scope[f.gsArgName];
+                        if(runtime.has(f.gsArgName)) ents[f.gsArgName] = runtime.scope[f.gsArgName];
                         runtime.scope[f.gsArgName] = f.gsArgVal;
                     });
                     body.forEach(n => interp(n));
@@ -1479,7 +1484,7 @@ function findFunction(name) {
 
 function findMethod(targetType, name) {
     // resolve if it is in the public scope
-    if(Object.hasOwn(runtime.scope, name) && runtime.scope[name] instanceof moduleDev.GSMethod) {
+    if(runtime.has(name) && runtime.get(name) instanceof moduleDev.GSMethod) {
         const m = runtime.scope[name];
         if(Array.isArray(m.gsMethodAttach)) {
             if(m.gsMethodAttach.some(t => typeCheck(t, targetType))) return m;
@@ -1527,7 +1532,7 @@ function resolveCond(cond) {
     if(cond.length == 1) {
         const ent = cond[0];
         if(ent.type == "Identifier") {
-            return Object.hasOwn(runtime.scope, ent.val) && runtime.scope[ent.val] != undefined;
+            return runtime.has(ent.val) && runtime.scope[ent.val] != undefined;
         } else {
             return ent.val != undefined;
         }
@@ -1567,7 +1572,7 @@ function resolveCond(cond) {
         if(cond[1]) {
             const ent = cond[1];
             if(ent.type == "Identifier") {
-                return !Object.hasOwn(runtime.scope, ent.val) || runtime.scope[ent.val] == undefined;
+                return !runtime.has(ent.val) || runtime.scope[ent.val] == undefined;
             } else {
                 return ent.val == undefined;
             }
