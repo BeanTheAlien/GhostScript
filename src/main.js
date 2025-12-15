@@ -36,6 +36,11 @@ const verbose = hasFlag("verbose");
 const debug = hasFlag("debug");
 const safe = hasFlag("safe");
 const beta = hasFlag("beta");
+const config = {};
+
+if(fs.existsSync("C:\\GhostScript")) {
+    config = JSON.parse(fs.readFileSync("C:\\GhostScript\\config.json"));
+}
 
 // class Runtime {
 //     constructor() {
@@ -966,7 +971,7 @@ function interp(node) {
                 let n = 0;
                 while(resolveCond(headerCond)) {
                     // if it exceeds 1M, its considered an infinite loop and it should break
-                    if(n > 1000000) {
+                    if((Object.hasOwn(config, "infinite_buffering") ? config.infinite_buffering : false) == false && n > 1000000) {
                         console.log(`While loop max iterations reached. (condition: '${JSON.stringify(headerCond)}')`);
                         break;
                     }

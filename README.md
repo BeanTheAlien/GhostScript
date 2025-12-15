@@ -156,7 +156,8 @@ Try running your script - you should see "Hello, World!".
 - Fixed an error that caused module failure to not be reachable. (14/12/2025)
 - Fixed an error that caused everything to be evaluated as a method declaration. (14/12/205)
 - Implemented ln/col, target error to be fixed. (15/12/2025)
-- Target changed to return identifier, temporary fix to solve invalid context issue.
+- Target changed to return identifier, temporary fix to solve invalid context issue. ([#9](https://github.com/BeanTheAlien/GhostScript/issues/9)) (15/12/2025)
+- Added config reading. Updated `infinite_buffering` breaking in infinite loops accordingly. (15/12/2025)
 
 # Roadmap
 - Further variable support.
