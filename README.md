@@ -156,6 +156,7 @@ Try running your script - you should see "Hello, World!".
 - Fixed an error that caused module failure to not be reachable. (14/12/2025)
 - Fixed an error that caused everything to be evaluated as a method declaration. (14/12/205)
 - Implemented ln/col, target error to be fixed. (15/12/2025)
+- Target changed to return identifier, temporary fix to solve invalid context issue.
 
 # Roadmap
 - Further variable support.

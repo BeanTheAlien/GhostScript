@@ -98,7 +98,6 @@ function tokenize(script) {
     const tk = (id, val, ln, col) => tokens.push({ id, val, ln, col });
     while(i < script.length) {
         let char = script[i];
-        console.log("%s %d %d", char, ln, col);
         // skip whitespace
         if(char == "\n") {
             i++;
@@ -688,10 +687,7 @@ function parsePrim(tokens, i) {
     }
     if(token.id == "not") return { node: { type: "Not", val: token.val }, next: i + 1 };
     if(token.id == "semi") return { node: { type: "Literal", val: token.val }, next: i + 1 };
-    if(token.id == "keyword" && token.val == "target") {
-        if(Object.hasOwn(runtime.scope, "target") && runtime.scope.target !== undefined) return { node: { type: "Identifier", val: token.val }, next: i + 1 };
-        throw new Error(`Keyword 'target' cannot be used in this context. (at ln ${token.ln}, col ${token.col})`);
-    }
+    if(token.id == "keyword" && token.val == "target") return { node: { type: "Identifier", val: token.val  }, next: i + 1 };
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id}) (at ln ${token.ln}, col ${token.col})`);
 }
 function parseArguments(tokens, i) {
