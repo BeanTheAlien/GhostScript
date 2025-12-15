@@ -4,10 +4,10 @@ const https = require("https");
 const cp = require("child_process");
 const util = require("util");
 const execAsync = util.promisify(cp.exec);
-const ContextAwarenessAPI = require("../api/ContextAwareness/contextawareness.js");
-const AutoDebuggerAPI = require("../api/AutoDebugger/autodebugger.js");
-const ContextAwareness = new ContextAwarenessAPI.ContextAwarenessAPI();
-const AutoDebugger = new AutoDebuggerAPI.AutoDebuggerAPI();
+// const ContextAwarenessAPI = require("../api/ContextAwareness/contextawareness.js");
+// const AutoDebuggerAPI = require("../api/AutoDebugger/autodebugger.js");
+// const ContextAwareness = new ContextAwarenessAPI.ContextAwarenessAPI();
+// const AutoDebugger = new AutoDebuggerAPI.AutoDebuggerAPI();
 
 class HTTPError extends Error {
     constructor(response, url) {
@@ -66,8 +66,6 @@ async function main() {
     //const tokens = await lexer(grammar, script);
     //await compile(tokens);
     const tokens = tokenize(script);
-    ContextAwareness.feed(tokens);
-    AutoDebugger.feed(tokens);
     await parser(tokens);
 }
 main();

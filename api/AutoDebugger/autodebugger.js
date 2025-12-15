@@ -1,25 +1,37 @@
 const huggingface = require("@huggingface/transformers");
-const pipe = await huggingface.pipeline("text-generation", "Qwen/Qwen2.5-Coder-7B-Instruct", {
-    dtype: "q4"
-});
 // role, content
 // role: system | user
-const initMessage = ``;
-const messages = [
-    { role: "system", content: "Hello, Qwen! Your goal is to find errors and provide solutions within the user's script.\nIt is important for me to recognize that this is a new programming language that has strange syntax - so you won't get everything right.\nThat's ok, just try your best with the provided materials!\nI will note that, if you can, try and suggest changes that are within the realm of the user's ability.\nIn the next message, I will provide the tokens, raw script and documentation. You should utilize these to guide your decision.\nOf course, I still care about you. Please do not hesitate to voice your emotions/opinions/etc, I appreciate feedback and am willing to help where I can." }
-];
-
-const out = await pipe(messages, { max_new_tokens: 128 });
-console.log(out[0].generated_text.at(-1).content);
 
 class AutoDebuggerAPI {
     constructor() {
         this.tokens = null;
+        this.script = null;
         this.runtime = null;
+        this.pipe = null;
     }
-    feed(tokens, runtime) {
+    async init() {
+        this.pipe = await huggingface.pipeline("text-generation", "Qwen/Qwen2.5-Coder-1.5B-Instruct", { dtype: "fp32", device: "cpu" });
+    }
+    feed(tokens, script, runtime) {
         this.tokens = tokens;
+        this.script = script;
         this.runtime = runtime;
+        this.initMessage();
+    }
+    async initMessage() {
+        console.log(this.pipe instanceof huggingface.TextGenerationPipeline);
+        const m = [
+            { role: "system", content: "Your goal is to find errors and provide solutions within the user's script.\nIf you can, try and suggest changes that are within the realm of the user's ability.\nThe next message will have the tokens, raw script and the runtime. You should utilize these to guide your decision." },
+            { role: "system", content: `TOKENS:\n${this.tokens}\nSCRIPT:\n${this.script}\nRUNTIME:\n${JSON.stringify(this.runtime)}` }
+        ];
+        const o = await this.pipe(m, { max_new_tokens: 128 });
+        console.log(o);
+    }
+    async resolve(message) {
+        const m = [{ role: "user", content: message }];
+        const o = await this.pipe(m);
+        console.log(o);
+        return o;
     }
     resolveNotFound(input) {
         // test casing mismatch
