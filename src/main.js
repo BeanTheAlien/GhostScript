@@ -615,6 +615,7 @@ function parsePrim(tokens, i) {
     }
     if(token.id == "not") return { node: { type: "Not", val: token.val }, next: i + 1 };
     if(token.id == "semi") return { node: { type: "Literal", val: token.val }, next: i + 1 };
+    if(token.id == "keyword" && token.val == "target") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     throw new Error(`Unexpected token '${token.val}'. (token id: ${token.id})`);
 }
 function parseArguments(tokens, i) {
