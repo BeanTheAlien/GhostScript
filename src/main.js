@@ -93,10 +93,12 @@ async function lexer(grammar, script) {
 function tokenize(script) {
     const tokens = [];
     let i = 0;
-    let ln = 0;
+    let ln = 1;
     let col = 0;
+    const tk = (id, val, ln, col) => tokens.push({ id, val, ln, col });
     while(i < script.length) {
         let char = script[i];
+        console.log("%s %d %d", char, ln, col);
         // skip whitespace
         if(char == "\n") {
             i++;
@@ -111,7 +113,10 @@ function tokenize(script) {
         }
         // line comments
         if(char == "/" && script[i + 1] == "/") {
-            while(i < script.length && script[i] != "\n") i++;
+            while(i < script.length && script[i] != "\n") {
+                i++;
+                col++;
+            }
             i++;
             ln++;
             col = 0;
@@ -120,12 +125,13 @@ function tokenize(script) {
         // block comments
         if(char == "/" && script[i + 1] == "*") {
             i += 2;
+            col += 2;
             while(i < script.length && !(script[i] == "*" && script[i+1] == "/")) {
-                i++;
                 if(script[i] == "\n") {
                     ln++;
                     col = 0;
                 } else col++;
+                i++;
             }
             i += 2;
             col += 2;
@@ -135,19 +141,22 @@ function tokenize(script) {
         // numbers
         if(/\-?\d/.test(char)) {
             let val = "";
-            const start = col;
+            const startLn = ln;
+            const startCol = col;
             while(i < script.length && /\d|\./.test(script[i])) {
                 val += script[i];
                 col++;
                 i++;
             }
-            tokens.push({ id: "num", val, ln, col: start });
+            tk("num", val, startLn, startCol);
             continue;
         }
 
         // identifiers or keywords
         if(/[a-zA-Z_]/.test(char)) {
             let val = "";
+            const startLn = ln;
+            const startCol = col;
             while(i < script.length && /[a-zA-Z0-9_]/.test(script[i])) {
                 val += script[i];
                 col++;
@@ -161,7 +170,7 @@ function tokenize(script) {
                 "desire", "const", "dedicated"
             ];
             const type = keywords.includes(val) ? "keyword" : mods.includes(val) ? "mod" : "id";
-            tokens.push({ id: type, val, ln: startLn, col: startCol });
+            tk(type, val, startLn, startCol);
             continue;
         }
 
@@ -185,95 +194,107 @@ function tokenize(script) {
             }
             i++; // skip closing quote
             col++;
-            tokens.push({ id: "string", val, ln: startLn, col: startCol });
+            tk("string", val, startLn, startCol);
             continue;
         }
 
         // two-char operators
         const twoChar = script.slice(i, i + 2);
         if(["==", "!=", ">=", "<=", "&&", "||", "=>"].includes(twoChar)) {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
             col += 2;
             i += 2;
-            tokens.push({ id: "opr", val: twoChar, ln, col: s });
+            tk("opr", twoChar, startLn, startCol)
             continue;
         }
 
         // single-char operators
         if("+-*/%<>".includes(char)) {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
             col++;
             i++;
-            tokens.push({ id: "opr", val: char, ln, col: s });
+            tk("opr", char, startLn, startCol);
             continue;
         }
         if(char == "=") {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
             i++;
             col++;
-            tokens.push({ id: "eqls", val: char, ln, col: s });
+            tk("eqls", char, startLn, startCol);
             continue;
         }
         if(char == ",") {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
             i++;
             col++;
-            tokens.push({ id: "comma", val: char, ln, col: s });
+            tk("comma", char, startLn, startCol);
             continue;
         }
         if(char == ".") {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
             i++;
             col++;
-            tokens.push({ id: "dot", val: char, ln, col: s });
+            tk("dot", char, startLn, startCol);
             continue;
         }
         if(char == ";") {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
             i++;
             col++;
-            tokens.push({ id: "semi", val: char, ln, col: s });
+            tk("semi", char, startLn, startCol);
             continue;
         }
 
         if(char == "(" || char == ")") {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
+            const type = char == "(" ? "lparen" : "rparen";
             i++;
             col++;
-            const type = char == "(" ? "lparen" : "rparen";
-            tokens.push({ id: type, val: char, ln, col: s });
+            tk(type, char, startLn, startCol);
             continue;
         }
 
         if(char == "[" || char == "]") {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
+            const type = char == "[" ? "lbracket" : "rbracket";
             i++;
             col++;
-            const type = char == "[" ? "lbracket" : "rbracket";
-            tokens.push({ id: type, val: char, ln, col: s });
+            tk(type, char, startLn, startCol);
             continue;
         }
 
         if(char == "{" || char == "}") {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
+            const type = char == "{" ? "lbrace" : "rbrace";
             i++;
             col++;
-            const type = char == "{" ? "lbrace" : "rbrace";
-            tokens.push({ id: type, val: char, ln, col: s });
+            tk(type, char, startLn, startCol);
             continue;
         }
         if(char == "!") {
-            const s = col;
+            const startLn = ln;
+            const startCol = col;
             i++;
             col++;
-            tokens.push({ id: "not", val: char, ln, col: s });
+            tk("not", char, startLn, startCol);
             continue;
         }
 
         // if we reach here, it's unknown
-        tokens.push({ id: "unknown", val: char, ln, col });
+        const startLn = ln;
+        const startCol = col;
         i++;
         col++;
+        tk("unknown", char, startLn, startCol);
     }
     return tokens;
 }
