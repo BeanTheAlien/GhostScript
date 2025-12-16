@@ -159,17 +159,22 @@ function tokenize(script) {
         }
 
         // numbers
-        if(/\d/.test(char)) {
-            let val = "";
+        if(/\d/.test(char) || char == "-") {
             const startLn = ln;
             const startCol = col;
-            while(i < script.length && /\d|\./.test(script[i])) {
-                val += script[i];
+            if(tokens[i-1] && (tokens[i-1].id != "id" && tokens[i-1].id != "number")) {
+                let val = "";
+                while(i < script.length && /\d|\./.test(script[i])) {
+                    val += script[i];
+                    col++;
+                    i++;
+                }
+                tk("num", val, startLn, startCol);
+                continue;
+            } else {
                 col++;
-                i++;
+                tk("opr", char, startLn, startCol);
             }
-            tk("num", val, startLn, startCol);
-            continue;
         }
 
         // identifiers or keywords
@@ -230,7 +235,7 @@ function tokenize(script) {
         }
 
         // single-char operators
-        if("+-*/%<>".includes(char)) {
+        if("+*/%<>".includes(char)) {
             const startLn = ln;
             const startCol = col;
             col++;

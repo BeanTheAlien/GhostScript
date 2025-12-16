@@ -160,6 +160,7 @@ Try running your script - you should see "Hello, World!".
 - Added config reading. Updated `infinite_buffering` breaking in infinite loops accordingly. (15/12/2025)
 - Fixed an assignment to constant error. (15/12/2025)
 - Removed negative check in parsing for error fixing. (16/12/2025)
+- HOTFIX: the negative numbers hotfix should (hopefully) fix [#10](https://github.com/BeanTheAlien/GhostScript/issues/10). This fix needs to be tested. (16/12/2025)
 
 # Roadmap
 - Further variable support.
