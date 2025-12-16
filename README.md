@@ -159,6 +159,7 @@ Try running your script - you should see "Hello, World!".
 - Target changed to return identifier, temporary fix to solve invalid context issue. ([#9](https://github.com/BeanTheAlien/GhostScript/issues/9)) (15/12/2025)
 - Added config reading. Updated `infinite_buffering` breaking in infinite loops accordingly. (15/12/2025)
 - Fixed an assignment to constant error. (15/12/2025)
+- Removed negative check in parsing for error fixing. (16/12/2025)
 
 # Roadmap
 - Further variable support.
