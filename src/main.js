@@ -176,6 +176,7 @@ function tokenize(script) {
             const startLn = ln;
             const startCol = col;
             let val = "-";
+            i++;
             while(i < script.length && /\d|\./.test(script[i])) {
                 val += script[i];
                 col++;

@@ -167,6 +167,7 @@ Try running your script - you should see "Hello, World!".
 
 # Roadmap
 - Further variable support.
+- Cached imports.
 
 # Complete
 ~~- More comprehensive lexer/compiler.~~ (v0.0.6)\
