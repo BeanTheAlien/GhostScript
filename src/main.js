@@ -617,8 +617,9 @@ function parseObject(tokens, i) {
         if(tokens[i+1] && tokens[i+1].id == "colon") {
             i++;
             if(tokens[i+1]) {
-                const val = tokens[i+1];
-                obj[key] = val;
+                const val = parseExpr(tokens, i);
+                obj[key] = val.node;
+                i = val.next;
             } else throw new UnexpectedTerminationError("object entry", tokens[i]);
         } else if(runtime.has(key)) {
             obj[key] = runtime.get(key);
