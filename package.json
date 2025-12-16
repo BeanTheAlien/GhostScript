@@ -1,6 +1,6 @@
 {
   "name": "@beanthealien/ghostscript",
-  "version": "0.0.10",
+  "version": "0.1.0",
   "description": "This is the home of the GhostScript language!",
   "main": "./src/main.js",
   "scripts": {
