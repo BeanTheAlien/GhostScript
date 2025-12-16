@@ -714,17 +714,23 @@ function parseArrAccess(tokens, i) {
     throw new Error("Unterminated array index. Expected ']'.");
 }
 function parseCond(tokens, i) {
-    // skip over inital opr
-    i++;
+    const cond = [];
     // terminate early (resolveCond will handle)
-    if(!tokens[i]) return i;
+    if(!tokens[i]) return { cond, next: i };
+    let depth = 0;
     while(i < tokens.length) {
+        const tk = tokens[i];
         // greedily find all supported types for a conditional
         // then return once they are all found with the next position
-        if(["string", "num", "id", "opr"].includes(tokens[i].id)) i++;
-        else return i;
+        if(["string", "num", "id", "opr", "lparen", "rparen"].includes(tk.id)) {
+            if(tk.val == "(") depth++;
+            if(tk.val == ")") depth--;
+            if(depth < 0) break;
+            cond.push(tk);
+            i++;
+        } else break;
     }
-    return i;
+    return { cond, next: i };
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
@@ -774,8 +780,8 @@ function parsePrim(tokens, i) {
     // returns a literal boolean value
     if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && ["==", "!=", ">=", "<=", "&&", "||", "=>", "<", ">"].includes(tokens[i+1].val))) {
         const expr = parseCond(tokens, i);
-        const res = resolveCond(tokens.slice(i, expr + 1));
-        return { node: { type: "Literal", val: res }, next: expr + 1 };
+        const res = resolveCond(expr.cond);
+        return { node: { type: "Literal", val: res }, next: expr.next };
     }
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
