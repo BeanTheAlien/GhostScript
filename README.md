@@ -162,8 +162,9 @@ Try running your script - you should see "Hello, World!".
 - Removed negative check in parsing for error fixing. (16/12/2025)
 - HOTFIX: the negative numbers hotfix should (hopefully) fix [#10](https://github.com/BeanTheAlien/GhostScript/issues/10). This fix needs to be tested. (16/12/2025)
 - Started implementing object support. (16/12/2025)
-- Added math support ([#10](https://github.com/BeanTheAlien/GhostScript/issues/10)). (16/12/2025)
-- Fixed issue [#6](https://github.com/BeanTheAlien/GhostScript/issues/6).
+- Added math support ([#11](https://github.com/BeanTheAlien/GhostScript/issues/11)). (16/12/2025)
+- Fixed issue [#6](https://github.com/BeanTheAlien/GhostScript/issues/6). (16/12/2025)
+- Fixed issue [#10](https://github.com/BeanTheAlien/GhostScript/issues/10). (16/12/2025)
 
 # Roadmap
 - Further variable support.
