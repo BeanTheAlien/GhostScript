@@ -42,7 +42,7 @@ const verbose = hasFlag("verbose");
 const debug = hasFlag("debug");
 const safe = hasFlag("safe");
 const beta = hasFlag("beta");
-const config = {};
+var config = {};
 
 if(fs.existsSync("C:\\GhostScript")) {
     config = JSON.parse(fs.readFileSync("C:\\GhostScript\\config.json"));
@@ -59,19 +59,19 @@ class Runtime {
     get(k) {
         return this.scope[k];
     }
-    add(nm, vl) {
-        this.scope[nm] = vl;
+    set(k, v) {
+        this.scope[k] = v;
     }
-    rem(nm) {
+    rm(nm) {
         delete this.scope[nm];
     }
 }
 
 var runtime = new Runtime();
-runtime.add("true", true);
-runtime.add("false", false);
-runtime.add("null", null);
-runtime.add("undefined", undefined);
+runtime.set("true", true);
+runtime.set("false", false);
+runtime.set("null", null);
+runtime.set("undefined", undefined);
 var moduleDev = null;
 const raw = "https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost";
 
@@ -910,7 +910,7 @@ function interp(node) {
                     });
                     runtime.scope["target"] = target;
                     formal.forEach(f => {
-                        if(Object.hasOwn(runtime.scope, f.gsArgName)) ents[f.gsArgName] = runtime.scope[f.gsArgName];
+                        if(runtime.has(f.gsArgName)) ents[f.gsArgName] = runtime.get(f.gsArgName);
                         runtime.scope[f.gsArgName] = f.gsArgVal;
                     });
                     body.forEach(n => interp(n));
@@ -955,7 +955,7 @@ function interp(node) {
         case "ArrayAccess":
             const [arr, poses] = node.val;
             let els = [];
-            if(!Object.hasOwn(runtime.scope, arr)) throw new Error("Cannot index undefined.");
+            if(!runtime.has(arr)) throw new Error("Cannot index undefined.");
             const entry = runtime.scope[arr];
             if(!Array.isArray(entry) && typeof entry != "string") {
                 console.warn(`Warning: attempting to index non-array '${arr}'. (content: ${JSON.stringify(entry)})`);

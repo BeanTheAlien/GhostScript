@@ -158,6 +158,7 @@ Try running your script - you should see "Hello, World!".
 - Implemented ln/col, target error to be fixed. (15/12/2025)
 - Target changed to return identifier, temporary fix to solve invalid context issue. ([#9](https://github.com/BeanTheAlien/GhostScript/issues/9)) (15/12/2025)
 - Added config reading. Updated `infinite_buffering` breaking in infinite loops accordingly. (15/12/2025)
+- Fixed an assignment to constant error. (15/12/2025)
 
 # Roadmap
 - Further variable support.
