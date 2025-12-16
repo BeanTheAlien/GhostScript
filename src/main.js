@@ -192,7 +192,7 @@ function tokenize(script) {
                 "function", "method", "prop", "target"
             ];
             const mods = [
-                "desire", "const", "dedicated"
+                "desire", "const", "dedicated", "public", "private", "protected"
             ];
             const type = keywords.includes(val) ? "keyword" : mods.includes(val) ? "mod" : "id";
             tk(type, val, startLn, startCol);
@@ -275,6 +275,14 @@ function tokenize(script) {
             tk("semi", char, startLn, startCol);
             continue;
         }
+        if(char == ":") {
+            const startLn = ln;
+            const startCol = col;
+            i++;
+            col++;
+            tk("colon", char, startLn, startCol);
+            continue;
+        }
 
         if(char == "(" || char == ")") {
             const startLn = ln;
@@ -330,11 +338,11 @@ function inject(m) {
     if(m.meta && m.meta.reqroot == false) {
         for(const [k, v] of Object.entries(m.exports)) {
             // avoid clobbering existing names unless you want to
-            if(runtime.scope[k]) {
+            if(runtime.has(k)) {
                 console.warn(`Skipping import of '${k}' from ${m.meta.name}: name conflict in global scope`);
                 continue;
             }
-            runtime.scope[k] = v;
+            runtime.set(k, v);
         }
     } else {
         // else expose under default root name
@@ -597,16 +605,58 @@ function parseArr(tokens, i) {
     }
     throw new Error("Unterminated array literal (missing ']').");
 }
+function parseObject(tokens, i) {
+    let obj = {};
+    // skip opening brace
+    i++;
+    if(tokens[i] && tokens[i].id == "rbrace") {
+        return { obj, next: i + 1 };
+    }
+    while(i < tokens.length) {
+        const key = tokens[i];
+        if(tokens[i+1] && tokens[i+1].id == "colon") {
+            i++;
+            if(tokens[i+1]) {
+                const val = tokens[i+1];
+                obj[key] = val;
+            } else throw new UnexpectedTerminationError("object entry", tokens[i]);
+        } else if(runtime.has(key)) {
+            obj[key] = runtime.get(key);
+        } else throw new UnexpectedTokenError("object entry", key);
+    }
+}
 function parseMath(tokens, i) {
     let n = 0;
     // if the first value isnt a number, then its not an equation
-    if(tokens[i].id != "num") throw new Error(`Non-equation found. (got '${tokens[i].id}')`);
+    if(tokens[i].id != "num" && (tokens[i].id == "id" && !runtime.has(tokens[i].val))) throw new Error(`Non-equation found. (got '${tokens[i].id}')`);
+    const eq = [];
+    // find all the tokens that make up the equation
+    while(i < tokens.length) {
+        const tk = tokens[i];
+        if(["num", "id", "opr", "lparen", "rparen"].includes(tk.id)) {
+            eq.push(tk);
+        } else throw new UnexpectedTokenError(tk);
+    }
+    let j = 0;
+    while(j < eq.length) {
+        const lhs = eq[j];
+        if(eq[j+1]) {
+            if(eq[j+1].id != "opr") throw new gsSyntaxError("operator", "math", eq[j+1]);
+            const opr = eq[j+1];
+            if(eq[j+2]) {
+                if(eq[j+2].id == "opr") throw new gsSyntaxError("generic", "math", eq[j+2]);
+                const rhs = eq[j+2];
+                if(opr.val == "+") n += lhs + rhs;
+            } else throw new UnexpectedTerminationError("math", opr);
+        } else throw new UnexpectedTerminationError("math", lhs);
+        j += 3;
+    }
     while(i < tokens.length) {
         let lhs = tokens[i];
         // if there is an operator after lhs, continue solving
         // else, if there is a token, throw error (there needs to be an operator to work with)
         // else we break early (it is solved)
-        if(tokens[i+1] && tokens[i+1].id == "opr") {
+        if(tokens[i+1] && (tokens[i+1].id == "opr")) {
             let opr = tokens[i+1];
             // assuming an operator is found, it requires rhs
             if(!tokens[i+2] || tokens[i+2].id != "num") throw new Error("Invalid right-hand side found.");
