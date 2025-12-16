@@ -1052,7 +1052,6 @@ function interp(node) {
             let els = [];
             if(!runtime.has(arr)) throw new Error("Cannot index undefined.");
             const entry = runtime.scope[arr];
-            console.log(poses);
             if(!Array.isArray(entry) && typeof entry != "string") {
                 console.warn(`Warning: attempting to index non-array '${arr}'. (content: ${JSON.stringify(entry)})`);
                 const string = JSON.stringify(entry);
