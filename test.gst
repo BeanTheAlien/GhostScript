@@ -1,4 +1,3 @@
 import ghost
 
-var foo = ["bar"]
-println(foo[-1])
+println(1 + 1)

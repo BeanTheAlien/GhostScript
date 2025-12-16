@@ -3,6 +3,7 @@ const path = require("path");
 const https = require("https");
 const cp = require("child_process");
 const util = require("util");
+const math = require("mathjs");
 const execAsync = util.promisify(cp.exec);
 // const ContextAwarenessAPI = require("../api/ContextAwareness/contextawareness.js");
 // const AutoDebuggerAPI = require("../api/AutoDebugger/autodebugger.js");
@@ -18,7 +19,7 @@ class HTTPError extends Error {
 }
 class ErrRoot extends Error {
     constructor(msg, name, token) {
-        if(!Object.hasOwn(token, "ln") || !Object.hasOwn(token, "col")) throw runtime.get("InternalJavaScriptError");
+        //if(!Object.hasOwn(token, "ln") || !Object.hasOwn(token, "col")) throw runtime.get("InternalJavaScriptError");
         super(`${msg} (ln ${token.ln}, col ${token.col})`);
         this.name = name;
     }
@@ -159,22 +160,29 @@ function tokenize(script) {
         }
 
         // numbers
-        if(/\d/.test(char) || char == "-") {
+        if(/\d/.test(char)) {
             const startLn = ln;
             const startCol = col;
-            if(tokens[i-1] && (tokens[i-1].id != "id" && tokens[i-1].id != "number")) {
-                let val = "";
-                while(i < script.length && /\d|\./.test(script[i])) {
-                    val += script[i];
-                    col++;
-                    i++;
-                }
-                tk("num", val, startLn, startCol);
-                continue;
-            } else {
+            let val = "";
+            while(i < script.length && /\d|\./.test(script[i])) {
+                val += script[i];
                 col++;
-                tk("opr", char, startLn, startCol);
+                i++;
             }
+            tk("num", val, startLn, startCol);
+            continue;
+        }
+        if(char == "-" && (!tokens[i-1] || ["opr", "lparen"].includes(tokens[i-1].id))) {
+            const startLn = ln;
+            const startCol = col;
+            let val = "-";
+            while(i < script.length && /\d|\./.test(script[i])) {
+                val += script[i];
+                col++;
+                i++;
+            }
+            tk("num", val, startLn, startCol);
+            continue;
         }
 
         // identifiers or keywords
@@ -235,7 +243,7 @@ function tokenize(script) {
         }
 
         // single-char operators
-        if("+*/%<>".includes(char)) {
+        if("+-*/%<>".includes(char)) {
             const startLn = ln;
             const startCol = col;
             col++;
@@ -626,6 +634,21 @@ function parseObject(tokens, i) {
         } else throw new UnexpectedTokenError("object entry", key);
     }
 }
+function parseEquation(tokens, i) {
+    const eq = [];
+    let depth = 1;
+    while(i < tokens.length && depth > 0) {
+        const tk = tokens[i];
+        if(["num", "id", "opr", "lparen", "rparen"].includes(tk.id)) {
+            if(tk.val == "(") depth++;
+            if(tk.val == ")") depth--;
+            if(depth == 0) break;
+            eq.push(tk.val);
+            i++;
+        } else break;
+    }
+    return { eq, next: i };
+}
 function parseMath(tokens, i) {
     let n = 0;
     // if the first value isnt a number, then its not an equation
@@ -742,10 +765,14 @@ function parsePrim(tokens, i) {
         const access = parseArrAccess(tokens, i);
         return { node: { type: "ArrayAccess", val: [token.val, access.poses] }, next: access.next };
     }
+    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && !["==", "!=", ">=", "<=", "&&", "||", "=>", "<", ">"].includes(tokens[i+1].val))) {
+        const m = parseEquation(tokens, i);
+        return { node: { type: "Literal", val: math.evaluate(m.eq.join(""), { ...runtime.scope }) }, next: m.next };
+    }
     // to resolve operator support extension, check if the following value is an opr
     // supporting multiple possible lhs types
     // returns a literal boolean value
-    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && tokens[i+1].id == "opr") {
+    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && ["==", "!=", ">=", "<=", "&&", "||", "=>", "<", ">"].includes(tokens[i+1].val))) {
         const expr = parseCond(tokens, i);
         const res = resolveCond(tokens.slice(i, expr + 1));
         return { node: { type: "Literal", val: res }, next: expr + 1 };
