@@ -16,12 +16,17 @@ class HTTPError extends Error {
         this.name = "HTTPError";
     }
 }
-class UnexpectedTokenError extends Error {
-    constructor(token) {
-        super(`Unexpected token '${token.val}' with id '${token.id}'. (ln ${token.ln}, col ${token.col})`);
-        this.name = "UnexpectedTokenError";
+class ErrRoot extends Error {
+    constructor(msg, name, token) {
+        if(!Object.hasOwn(token, "ln") || !Object.hasOwn(token, "col")) throw runtime.get("InternalJavaScriptError");
+        super(`${msg} (ln ${token.ln}, col ${token.col})`);
+        this.name = name;
     }
 }
+class UnexpectedTokenError extends ErrRoot { constructor(token) { super(`Unexpected token '${token.val}' with id '${token.id}'.`, "UnexpectedTokenError", token); } }
+class UnexpectedTerminationError extends ErrRoot { constructor(type, token) { super(`Unexpected termination of ${type}.`, "UnexpectedTerminationError", token); } }
+class UnterminatedStatementError extends ErrRoot { constructor(type, char, token) { super(`Unterminated ${type} statement. (missing '${char}').`, "UnterminatedStatementError", token); } }
+class gsSyntaxError extends ErrRoot { constructor(char, type, token) { super(`Expected ${char} for ${type}.`, "SyntaxError", token); } }
 
 const [,, ...args] = process.argv;
 function hasFlag(flag) {
@@ -338,7 +343,7 @@ async function parser(tokens) {
         const tk = tokens[i];
         if(tk.id == "keyword" && tk.val == "import") {
             const imp = parseImport(tokens, i);
-            if(!imp.module.length) throw new Error("Unexpected termination of import.");
+            if(!imp.module.length) throw new UnexpectedTerminationError("import", tk);
             // const modName = tokens[i+1].val;
             const lib = await getModule(...imp.module);
             const impName = imp.module.join(".");
@@ -402,7 +407,7 @@ function parseBlock(tokens, i) {
         i++;
     }
     // Handle unterminated block statements
-    if(depth > 0) throw new Error("Unterminated block statement. (expected '}')");
+    if(depth > 0) throw new UnterminatedStatementError("block", "}", tokens[i - 1]);
     let parsedBody = [];
     let j = 0;
     while(j < body.length) {
@@ -449,10 +454,10 @@ function parseBlockHeader(tokens, i) {
     if(["if", "while"].includes(header)) {
         // move to opening paren
         i++;
-        if(tokens[i].id != "lparen") throw new Error("Expected left paren for conditional header.");
+        if(tokens[i].id != "lparen") throw new gsSyntaxError("left paren", "conditional header", tokens[i]);
         // move inside
         i++;
-        if(tokens[i].id == "rparen") throw new Error("Unexpected termination of conditional header.");
+        if(tokens[i].id == "rparen") throw new UnexpectedTerminationError("conditional header", tokens[i]);
         let cond = [];
         let depth = 1;
         while(i < tokens.length && depth > 0) {
@@ -471,7 +476,7 @@ function parseBlockHeader(tokens, i) {
             }
             i++;
         }
-        if(depth > 0) throw new Error("Unterminated conditional statement. (expected ')')");
+        if(depth > 0) throw new UnterminatedStatementError("conditional statement", ")", tokens[i - 1]);
         // since the conditional is not parsed, parse it
         let parsedCond = [];
         let j = 0;
