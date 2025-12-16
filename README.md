@@ -21,7 +21,7 @@ Use the same name for a variable, function and method? Fine. Add spaces or symbo
 Ghost is alive and evolving - its creator, [@BeanTheAlien](https://github.com/BeanTheAlien), keeps pushing updates that expand what a scripting language can do.\
 Got a project? Try GhostScript and see how much simpler coding can feel.
 
-# Version 0.0.10
+# Version 0.1.0
 
 # Downloads
 ## Stable
@@ -165,6 +165,8 @@ Try running your script - you should see "Hello, World!".
 - Added math support ([#11](https://github.com/BeanTheAlien/GhostScript/issues/11)). (16/12/2025)
 - Fixed issue [#6](https://github.com/BeanTheAlien/GhostScript/issues/6). (16/12/2025)
 - Fixed issue [#10](https://github.com/BeanTheAlien/GhostScript/issues/10). (16/12/2025)
+## 0.1.0
+- The summary of v0.0.10 bring us to the first minor release of GhostScript! (16/12/2025)
 
 # Roadmap
 - Further variable support.
