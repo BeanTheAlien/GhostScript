@@ -168,6 +168,8 @@ Try running your script - you should see "Hello, World!".
 - Fixed issue [#10](https://github.com/BeanTheAlien/GhostScript/issues/10). (16/12/2025)
 ## 0.1.0
 - The summary of v0.0.10 bring us to the first minor release of GhostScript! (16/12/2025)
+- Further implemented object support. Should an object key be a identifier and it does not have a comma to seperate it from the next entry, it will automatically capture that identifier and continue. (17/12/2025)
+- Various enhancements to array access, added support for property GET via brackets. (17/12/2025)
 
 # Roadmap
 - Further variable support.

@@ -28,6 +28,8 @@ class UnexpectedTokenError extends ErrRoot { constructor(token) { super(`Unexpec
 class UnexpectedTerminationError extends ErrRoot { constructor(type, token) { super(`Unexpected termination of ${type}.`, "UnexpectedTerminationError", token); } }
 class UnterminatedStatementError extends ErrRoot { constructor(type, char, token) { super(`Unterminated ${type} statement. (missing '${char}').`, "UnterminatedStatementError", token); } }
 class gsSyntaxError extends ErrRoot { constructor(char, type, token) { super(`Expected ${char} for ${type}.`, "SyntaxError", token); } }
+class gsTypeError extends ErrRoot { constructor(received, expected, type, token) { super(`Expected '${expected}' for ${type}, got '${received}'.`, "TypeError", token); }  }
+class DuplicateKeyError extends ErrRoot { constructor(k, token) { super(`Received duplicate key '${k}'.`, "DuplicateKeyError", token); } }
 
 const [,, ...args] = process.argv;
 function hasFlag(flag) {
@@ -621,19 +623,29 @@ function parseObject(tokens, i) {
     if(tokens[i] && tokens[i].id == "rbrace") {
         return { obj, next: i + 1 };
     }
+    let depth = 1;
     while(i < tokens.length) {
-        const key = tokens[i];
-        if(tokens[i+1] && tokens[i+1].id == "colon") {
+        if(tokens[i].id == "lbrace") depth++;
+        if(tokens[i].id == "rbrace") depth--;
+        if(depth <= 0) break;
+        if(tokens[i].id == "comma") {
             i++;
-            if(tokens[i+1]) {
-                const val = parseExpr(tokens, i);
-                obj[key] = val.node;
-                i = val.next;
-            } else throw new UnexpectedTerminationError("object entry", tokens[i]);
+            continue;
+        }
+        const key = tokens[i].val;
+        if(Object.hasOwn(obj, key)) throw new DuplicateKeyError(key, tokens[i]);
+        if(tokens[i+1] && tokens[i+1].id == "colon") {
+            i += 2;
+            const val = parseExpr(tokens, i);
+            obj[key] = val.node;
+            i = val.next;
         } else if(runtime.has(key)) {
             obj[key] = runtime.get(key);
+            i++;
         } else throw new UnexpectedTokenError("object entry", key);
     }
+    if(depth > 0) throw new UnterminatedStatementError("object", "}", tokens[i-1]);
+    return { obj, next: i + 1 };
 }
 function parseEquation(tokens, i) {
     const eq = [];
@@ -708,11 +720,33 @@ function parseArrAccess(tokens, i) {
     i += 2;
     while(i < tokens.length) {
         const tk = tokens[i];
-        if(tk && tk.id == "num") poses.push(tk.val);
-        if(tk && tk.id == "rbracket") return { poses, next: i + 1 };
-        i++;
+        if(tk.id == "comma") {
+            i++;
+            continue;
+        }
+        if(tk.id == "rbracket") return { poses, next: i + 1 };
+        const expr = parseExpr(tokens, i);
+        if(expr.node.type != "Literal" || typeof expr.node.val != "number") throw new gsTypeError(expr.node.type, "Literal", "array index", tokens[i]);
+        poses.push(expr.node.val);
+        i = expr.next;
     }
-    throw new Error("Unterminated array index. Expected ']'.");
+    throw new UnterminatedStatementError("array index", "]", tokens[i-1]);
+}
+function parsePropGet(tokens, i) {
+    let props = [];
+    i += 2;
+    while(i < tokens.length) {
+        const tk = tokens[i];
+        if(tk.id == "comma") {
+            i++;
+            continue;
+        }
+        if(tk.id == "rbracket") return { props, next: i + 1 };
+        const expr = parseExpr(tokens, i);
+        props.push(expr.node.val);
+        i = expr.next;
+    }
+    throw new UnterminatedStatementError("property get", "]", tokens[i-1]);
 }
 function parseCond(tokens, i) {
     const cond = [];
@@ -769,8 +803,14 @@ function parsePrim(tokens, i) {
         return { node: { type: "ConditionalHeader", val: [header, condHeader.node.val[1], condBody] }, next: condBody.next + 1 };
     }
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "lbracket") {
-        const access = parseArrAccess(tokens, i);
-        return { node: { type: "ArrayAccess", val: [token.val, access.poses] }, next: access.next };
+        if(runtime.has(token.val) && Array.isArray(runtime.get(token.val))) {
+            const access = parseArrAccess(tokens, i);
+            return { node: { type: "ArrayAccess", val: [token.val, access.poses] }, next: access.next };
+        } else if(runtime.has(token.val)) {
+            // treat it as a property get
+            const propGet = parsePropGet(tokens, i);
+            return { node: { type: "PropGet", val: [token, propGet.props] }, next: propGet.next };
+        }
     }
     if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && !["==", "!=", ">=", "<=", "&&", "||", "=>", "<", ">"].includes(tokens[i+1].val))) {
         const m = parseEquation(tokens, i);
@@ -784,6 +824,11 @@ function parsePrim(tokens, i) {
         const res = resolveCond(expr.cond);
         return { node: { type: "Literal", val: res }, next: expr.next };
     }
+    if(token.id == "lbrace") {
+        const obj = parseObject(tokens, i);
+        const object = obj.obj;
+        return { node: { type: "Literal", val: object }, next: obj.next };
+    }
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "num") return { node: { type: "Literal", val: Number(token.val) }, next: i + 1 };
@@ -792,10 +837,10 @@ function parsePrim(tokens, i) {
         const arr = parseArr(tokens, i);
         return { node: arr.node, next: arr.next };
     }
-    if(token.id == "lbrace") {
-        const block = parseBlock(tokens, i);
-        return { node: block.node, next: block.next };
-    }
+    // if(token.id == "lbrace") {
+    //     const block = parseBlock(tokens, i);
+    //     return { node: block.node, next: block.next };
+    // }
     if(token.id == "not") return { node: { type: "Not", val: token.val }, next: i + 1 };
     if(token.id == "semi") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "keyword" && token.val == "target") return { node: { type: "Identifier", val: token.val  }, next: i + 1 };
@@ -1086,6 +1131,13 @@ function interp(node) {
                 }
             }
             break;
+        
+        case "PropGet":
+            const [token, props] = node.val;
+            const vals = [];
+            const ref = runtime.get(token.val);
+            for(let i = 0; i < props.length; i++) vals.push(ref[props[i]]);
+            return vals;
         
         default:
             console.error("interp: unknown node:", node);

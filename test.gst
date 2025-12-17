@@ -1,4 +1,6 @@
 import ghost
 
-var foo = ["bar"]
-println(foo[-1])
+var foo = "hello"
+var bar = { foo }
+
+println(bar["foo"])
