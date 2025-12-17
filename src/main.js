@@ -55,6 +55,19 @@ var config = {};
 if(fs.existsSync("C:\\GhostScript")) {
     config = JSON.parse(fs.readFileSync("C:\\GhostScript\\config.json"));
 }
+async function getCache() {
+    if(fs.existsSync(path.join(__dirname, "cache"))) {
+        const cache = fs.readdirSync(path.join(__dirname, "cache"), { withFileTypes: true, recursive: true });
+        for(const cachedModule of cache) {
+            if(cachedModule.isFile()) {
+                const js = fs.readFileSync(path.join(__dirname, "cache", cachedModule.name), "utf8");
+                const m = await processImport(js);
+                inject(m);
+            }
+        }
+    }
+}
+getCache();
 
 class Runtime {
     constructor() {
@@ -1379,12 +1392,17 @@ async function processImport(js) {
 
     return {
         meta,
-        exports: flat
+        exports: flat,
+        raw: js
     };
 }
 async function getModule(...parts) {
     if(!moduleDev) await fetchModuleDev();
+    if(!fs.existsSync(path.join(__dirname, "cache"))) {
+        fs.mkdirSync(path.join(__dirname, "cache"));
+    }
     const url = parts.join("/");
+    if(Object.hasOwn(runtime.modules), url) return console.log(`'${url}' is already imported.`);
     // check if the URL has a index.json file
     if(await hasJSON(url)) {
         // recurse through all the files
@@ -1394,6 +1412,9 @@ async function getModule(...parts) {
             const file = await getModule(url, f.slice(0, -3));
             inject(file);
             await resolveDeps(file);
+            if(!fs.existsSync(__dirname, "cache", url, f)) {
+                fs.writeFile(path.join(__dirname, "cache", url, f), file.raw);
+            }
         }
         return 0;
     }
@@ -1401,6 +1422,9 @@ async function getModule(...parts) {
     if(await hasFile(url)) {
         // get the file and its content
         const js = await fetchRaw(`modules/${url}.js`);
+        if(!fs.existsSync(__dirname, "cache", url)) {
+            fs.writeFile(path.join(__dirname, "cache", `${url}.js`), js);
+        }
         return await processImport(js);
     }
     // check for a local file
