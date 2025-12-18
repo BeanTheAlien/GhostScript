@@ -213,7 +213,8 @@ function tokenize(script) {
             }
             const keywords = [
                 "var", "import", "if", "else", "while", "return", "class",
-                "function", "method", "prop", "target"
+                "function", "method", "prop", "target", "builder", "this",
+                "new"
             ];
             const mods = [
                 "desire", "const", "dedicated", "public", "private", "protected"
@@ -780,6 +781,88 @@ function parseCond(tokens, i) {
     }
     return { cond, next: i };
 }
+function parseClass(tokens, i) {
+    let body = [];
+    let depth = 1;
+    // skip opening brace
+    i++;
+    while(i < tokens.length && depth > 0) {
+        const tk = tokens[i];
+        if(tk.id == "lbrace") {
+            // go into another block statement
+            depth++;
+            if(depth > 1) body.push(tk);
+        } else if(tk.id == "rbrace") {
+            // move up a level
+            depth--;
+            if(depth > 1) body.push(tk);
+            else break;
+        } else {
+            body.push(tk);
+        }
+        i++;
+    }
+    // Handle unterminated block statements
+    if(depth > 0) throw new UnterminatedStatementError("block", "}", tokens[i - 1]);
+    const meta = {};
+    while(i < body.length) {
+        const tk = body[i];
+        if(tk.id == "keyword" && tk.val == "builder") {
+            const builder = [];
+            if(tokens[i+1] && tokens[i+1].id == "lparen") {
+                i++;
+                const args = parseArguments(tokens, i);
+                builder.push(args.args);
+                i = args.next;
+            }
+            const block = parseBlock(builder, 0);
+            meta["builder"] = block.node.val;
+            i = block.next;
+            continue;
+        }
+        if(tk.id == "id") {
+            const func = [];
+            if(tokens[i+1] && tokens[i+1].id == "lparen") {
+                i++;
+                const args = parseArguments(tokens, i);
+                func.push(args.args);
+                i = args.next;
+            }
+            const block = parseBlock(func, 0);
+            meta[tk.val] = block.node.val;
+            i = block.next;
+            continue;
+        }
+        if(tk.id == "keyword" && tk.val == "this") {
+            if(tokens[i+1]) {
+                i++;
+                if(tokens[i].id == "dot") {
+                    i++;
+                    if(tokens[i] && tokens[i].id == "id") {
+                        const id = tokens[i].val;
+                        if(tokens[i+1] && tokens[i+1].id == "eqls") {
+                            i += 2;
+                            const val = parseExpr(tokens, i);
+                            meta[id] = val.node.val;
+                            i = val.next;
+                        }
+                    } else throw new UnexpectedTokenError(tokens[i]);
+                } else if(tokens[i].id == "id") {
+                    const id = tokens[i].val;
+                    if(tokens[i+1] && tokens[i+1].id == "eqls") {
+                        i += 2;
+                        const val = parseExpr(tokens, i);
+                        meta[id] = val.node.val;
+                        i = val.next;
+                    }
+                } else throw new UnexpectedTokenError(tokens[i]);
+            } else throw new UnexpectedTerminationError("this", tk);
+        }
+        i++;
+    }
+    if(!Object.hasOwn(meta, "builder")) meta["builder"] = [];
+    return { meta, next: i };
+}
 function parsePrim(tokens, i) {
     const token = tokens[i];
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
@@ -815,6 +898,12 @@ function parsePrim(tokens, i) {
         const condBody = parseBlock(tokens, condHeader.next);
         return { node: { type: "ConditionalHeader", val: [header, condHeader.node.val[1], condBody] }, next: condBody.next + 1 };
     }
+    if(token.id == "keyword" && token.val == "class") {
+        const classHeader = parseBlockHeader(tokens, i);
+        const header = classHeader.node.val[0];
+        const body = parseClass(tokens, classHeader.next);
+        return { node: { type: "ClassDeclaration", val: [header, body] }, next: body.next + 1 };
+    }
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "lbracket") {
         if(runtime.has(token.val) && Array.isArray(runtime.get(token.val))) {
             const access = parseArrAccess(tokens, i);
@@ -841,6 +930,15 @@ function parsePrim(tokens, i) {
         const obj = parseObject(tokens, i);
         const object = obj.obj;
         return { node: { type: "Literal", val: object }, next: obj.next };
+    }
+    if(token.id == "keyword" && token.val == "new") {
+        if(tokens[i+1] && tokens[i+1].id == "id") {
+            i++;
+            if(runtime.has(tokens[i])) {
+                const args = parseArguments(tokens, i+1);
+                return { node: { type: "InstanceCreation", val: [tokens[i].val, args.args] }, next: args.next };
+            }
+        }
     }
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
@@ -1151,7 +1249,14 @@ function interp(node) {
             const ref = runtime.get(token.val);
             for(let i = 0; i < props.length; i++) vals.push(ref[props[i]]);
             return vals;
-        
+        case "ClassDeclaration": {
+            const [header, body] = node.val;
+            runtime.set(header, body);
+            break;
+        }
+        case "InstanceCreation":
+            const [cl, args] = node.val;
+            return new interp({ type: "CallExpression", val: runtime.get(cl).meta.builder(args) });
         default:
             console.error("interp: unknown node:", node);
             throw new Error(`Unknown node with type '${node.type}'.`);
