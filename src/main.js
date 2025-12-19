@@ -805,63 +805,91 @@ function parseClass(tokens, i) {
     // Handle unterminated block statements
     if(depth > 0) throw new UnterminatedStatementError("block", "}", tokens[i - 1]);
     const meta = {};
-    while(i < body.length) {
-        const tk = body[i];
+    let j = 0;
+    while(j < body.length) {
+        const tk = body[j];
         if(tk.id == "keyword" && tk.val == "builder") {
             const builder = [];
-            if(tokens[i+1] && tokens[i+1].id == "lparen") {
-                i++;
-                const args = parseArguments(tokens, i);
+            if(tokens[j+1] && tokens[j+1].id == "lparen") {
+                j++;
+                const args = parseArguments(tokens, j);
                 builder.push(args.args);
-                i = args.next;
+                j = args.next;
             }
             const block = parseBlock(builder, 0);
             meta["builder"] = block.node.val;
-            i = block.next;
+            j = block.next;
             continue;
         }
         if(tk.id == "id") {
             const func = [];
-            if(tokens[i+1] && tokens[i+1].id == "lparen") {
-                i++;
-                const args = parseArguments(tokens, i);
+            if(tokens[j+1] && tokens[j+1].id == "lparen") {
+                j++;
+                const args = parseArguments(tokens, j);
                 func.push(args.args);
-                i = args.next;
+                j = args.next;
             }
             const block = parseBlock(func, 0);
             meta[tk.val] = block.node.val;
-            i = block.next;
+            j = block.next;
             continue;
         }
         if(tk.id == "keyword" && tk.val == "this") {
-            if(tokens[i+1]) {
-                i++;
-                if(tokens[i].id == "dot") {
-                    i++;
-                    if(tokens[i] && tokens[i].id == "id") {
-                        const id = tokens[i].val;
-                        if(tokens[i+1] && tokens[i+1].id == "eqls") {
-                            i += 2;
-                            const val = parseExpr(tokens, i);
-                            meta[id] = val.node.val;
-                            i = val.next;
+            if(tokens[j+1]) {
+                j++;
+                if(tokens[j].id == "dot") {
+                    j++;
+                    if(tokens[j] && tokens[j].id == "id") {
+                        const id = tokens[j].val;
+                        if(tokens[j+1] && tokens[j+1].id == "eqls") {
+                            j += 2;
+                            const val = parseExpr(tokens, j);
+                            meta[id] = val.node;
+                            j = val.next;
                         }
-                    } else throw new UnexpectedTokenError(tokens[i]);
-                } else if(tokens[i].id == "id") {
-                    const id = tokens[i].val;
-                    if(tokens[i+1] && tokens[i+1].id == "eqls") {
-                        i += 2;
-                        const val = parseExpr(tokens, i);
-                        meta[id] = val.node.val;
-                        i = val.next;
+                    } else throw new UnexpectedTokenError(tokens[j]);
+                } else if(tokens[j].id == "id") {
+                    const id = tokens[j].val;
+                    if(tokens[j+1] && tokens[j+1].id == "eqls") {
+                        j += 2;
+                        const val = parseExpr(tokens, j);
+                        meta[id] = val.node;
+                        j = val.next;
                     }
-                } else throw new UnexpectedTokenError(tokens[i]);
+                } else throw new UnexpectedTokenError(tokens[j]);
             } else throw new UnexpectedTerminationError("this", tk);
         }
-        i++;
+        j++;
     }
     if(!Object.hasOwn(meta, "builder")) meta["builder"] = [];
     return { meta, next: i };
+}
+function genInstance(meta, args) {
+    const obj = {};
+    for(const [k, v] of Object.entries(meta)) {
+        if(k == "builder") continue;
+        obj[k] = v;
+    }
+    const execBuilder = () => {
+        let i = 0;
+        const tokens = meta.builder;
+        while(i < tokens.length) {
+            const tk = tokens[i];
+            if(tk.val == "this") {
+                i++;
+                if(tokens[i] && (tokens[i].id == "Dot" || tokens[i].id == "Identifier")) {
+                    if(tokens[i].id == "Dot") {
+                        i++;
+                    }
+                    const id = tokens[i].val;
+                    i += 2;
+                    const val = parseExpr(tokens, i);
+                    obj[id] = val.node.val;
+                    i = val.next;
+                }
+            }
+        }
+    }
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
@@ -955,6 +983,7 @@ function parsePrim(tokens, i) {
     if(token.id == "not") return { node: { type: "Not", val: token.val }, next: i + 1 };
     if(token.id == "semi") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "keyword" && token.val == "target") return { node: { type: "Identifier", val: token.val  }, next: i + 1 };
+    if(token.id == "dot") return { node: { type: "Dot", val: token.val }, next: i + 1 };
     throw new UnexpectedTokenError(token);
 }
 function parseArguments(tokens, i) {
