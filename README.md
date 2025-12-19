@@ -171,6 +171,7 @@ Try running your script - you should see "Hello, World!".
 - Further implemented object support. Should an object key be a identifier and it does not have a comma to seperate it from the next entry, it will automatically capture that identifier and continue. (17/12/2025)
 - Various enhancements to array access, added support for property GET via brackets. (17/12/2025)
 - Started adding class support. (untested) (17/12/2025)
+- Removed cache, because it was broken. (19/12/2025)
 
 # Roadmap
 - Further variable support.

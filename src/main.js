@@ -55,19 +55,6 @@ var config = {};
 if(fs.existsSync("C:\\GhostScript")) {
     config = JSON.parse(fs.readFileSync("C:\\GhostScript\\config.json"));
 }
-async function getCache() {
-    if(fs.existsSync(path.join(__dirname, "cache"))) {
-        const cache = fs.readdirSync(path.join(__dirname, "cache"), { withFileTypes: true, recursive: true });
-        for(const cachedModule of cache) {
-            if(cachedModule.isFile()) {
-                const js = fs.readFileSync(path.join(__dirname, "cache", cachedModule.name), "utf8");
-                const m = await processImport(js);
-                inject(m);
-            }
-        }
-    }
-}
-getCache();
 
 class Runtime {
     constructor() {
@@ -786,25 +773,22 @@ function parseClass(tokens, i) {
     let depth = 1;
     // skip opening brace
     i++;
-    while(i < tokens.length && depth > 0) {
+    while(i < tokens.length) {
         const tk = tokens[i];
-        if(tk.id == "lbrace") {
-            // go into another block statement
-            depth++;
-            if(depth > 1) body.push(tk);
-        } else if(tk.id == "rbrace") {
-            // move up a level
-            depth--;
-            if(depth > 1) body.push(tk);
-            else break;
-        } else {
-            body.push(tk);
-        }
+        if(tk.id == "lbrace") depth++;
+        if(tk.id == "rbrace") depth--;
+        if(depth == 0) break;
+        body.push(tk);
         i++;
     }
+    i++;
     // Handle unterminated block statements
     if(depth > 0) throw new UnterminatedStatementError("block", "}", tokens[i - 1]);
-    const meta = {};
+    const meta = {
+        builder: null,
+        methods: {},
+        fields: {}
+    };
     let j = 0;
     while(j < body.length) {
         const tk = body[j];
@@ -817,8 +801,15 @@ function parseClass(tokens, i) {
                 j = args.next;
             }
             const block = parseBlock(builder, 0);
-            meta["builder"] = block.node.val;
-            j = block.next;
+            let x = 0;
+            const parsedBlock = [];
+            while(x < block.node.val.length) {
+                const expr = parseExpr(block.node.val, x);
+                x = expr.next;
+                parsedBlock.push(expr.node);
+            }
+            meta.builder = parsedBlock;
+            j = x;
             continue;
         }
         if(tk.id == "id") {
@@ -830,8 +821,15 @@ function parseClass(tokens, i) {
                 j = args.next;
             }
             const block = parseBlock(func, 0);
-            meta[tk.val] = block.node.val;
-            j = block.next;
+            let x = 0;
+            const parsedBlock = [];
+            while(x < block.node.val.length) {
+                const expr = parseExpr(block.node.val, x);
+                x = expr.next;
+                parsedBlock.push(expr.node);
+            }
+            meta.methods[tk.val] = parsedBlock;
+            j = x;
             continue;
         }
         if(tk.id == "keyword" && tk.val == "this") {
@@ -844,7 +842,7 @@ function parseClass(tokens, i) {
                         if(tokens[j+1] && tokens[j+1].id == "eqls") {
                             j += 2;
                             const val = parseExpr(tokens, j);
-                            meta[id] = val.node;
+                            meta.fields[id] = val.node;
                             j = val.next;
                         }
                     } else throw new UnexpectedTokenError(tokens[j]);
@@ -853,7 +851,7 @@ function parseClass(tokens, i) {
                     if(tokens[j+1] && tokens[j+1].id == "eqls") {
                         j += 2;
                         const val = parseExpr(tokens, j);
-                        meta[id] = val.node;
+                        meta.fields[id] = val.node;
                         j = val.next;
                     }
                 } else throw new UnexpectedTokenError(tokens[j]);
@@ -861,7 +859,7 @@ function parseClass(tokens, i) {
         }
         j++;
     }
-    if(!Object.hasOwn(meta, "builder")) meta["builder"] = [];
+    if(!meta.builder) meta.builder = [];
     return { meta, next: i };
 }
 function genInstance(meta, args) {
@@ -1283,9 +1281,9 @@ function interp(node) {
             runtime.set(header, body);
             break;
         }
-        case "InstanceCreation":
-            const [cl, args] = node.val;
-            return new interp({ type: "CallExpression", val: runtime.get(cl).meta.builder(args) });
+        // case "InstanceCreation":
+        //     const [cl, args] = node.val;
+        //     return new interp({ type: "CallExpression", val: runtime.get(cl).meta.builder(args) });
         default:
             console.error("interp: unknown node:", node);
             throw new Error(`Unknown node with type '${node.type}'.`);
@@ -1526,17 +1524,12 @@ async function processImport(js) {
 
     return {
         meta,
-        exports: flat,
-        raw: js
+        exports: flat
     };
 }
 async function getModule(...parts) {
     if(!moduleDev) await fetchModuleDev();
-    if(!fs.existsSync(path.join(__dirname, "cache"))) {
-        fs.mkdirSync(path.join(__dirname, "cache"));
-    }
     const url = parts.join("/");
-    if(Object.hasOwn(runtime.modules), url) return console.log(`'${url}' is already imported.`);
     // check if the URL has a index.json file
     if(await hasJSON(url)) {
         // recurse through all the files
@@ -1546,9 +1539,6 @@ async function getModule(...parts) {
             const file = await getModule(url, f.slice(0, -3));
             inject(file);
             await resolveDeps(file);
-            if(!fs.existsSync(__dirname, "cache", url, f)) {
-                fs.writeFile(path.join(__dirname, "cache", url, f), file.raw);
-            }
         }
         return 0;
     }
@@ -1556,9 +1546,6 @@ async function getModule(...parts) {
     if(await hasFile(url)) {
         // get the file and its content
         const js = await fetchRaw(`modules/${url}.js`);
-        if(!fs.existsSync(__dirname, "cache", url)) {
-            fs.writeFile(path.join(__dirname, "cache", `${url}.js`), js);
-        }
         return await processImport(js);
     }
     // check for a local file

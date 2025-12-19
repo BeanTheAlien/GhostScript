@@ -1,6 +1,9 @@
 import ghost
 
-var foo = "hello"
-var bar = { foo }
+class foo {
+    builder() {
+        this.foo = "bar"
+    }
+}
 
-println(bar["foo"])
+println(foo)
