@@ -19,7 +19,7 @@ class HTTPError extends Error {
 }
 class ErrRoot extends Error {
     constructor(msg, name, token) {
-        //if(!Object.hasOwn(token, "ln") || !Object.hasOwn(token, "col")) throw runtime.get("InternalJavaScriptError");
+        if(!token || !Object.hasOwn(token, "ln") || !Object.hasOwn(token, "col") || !token.ln || !token.col) throw Error(`Received invalid token: ${token}`);
         super(`${msg} (ln ${token.ln}, col ${token.col})`);
         this.name = name;
     }
@@ -415,6 +415,7 @@ function parseBlock(tokens, i) {
     let depth = 1;
     // skip opening brace
     i++;
+    console.log(tokens)
     while(i < tokens.length && depth > 0) {
         const tk = tokens[i];
         if(tk.id == "lbrace") {
@@ -794,13 +795,14 @@ function parseClass(tokens, i) {
         const tk = body[j];
         if(tk.id == "keyword" && tk.val == "builder") {
             const builder = [];
-            if(tokens[j+1] && tokens[j+1].id == "lparen") {
+            j++;
+            if(tokens[j] && tokens[j].id == "lparen") {
                 j++;
                 const args = parseArguments(tokens, j);
                 builder.push(args.args);
                 j = args.next;
             }
-            const block = parseBlock(builder, 0);
+            const block = parseBlock(body, j);
             let x = 0;
             const parsedBlock = [];
             while(x < block.node.val.length) {
