@@ -412,26 +412,20 @@ function parseFunc(tokens, i) {
 }
 function parseBlock(tokens, i) {
     let body = [];
-    let depth = 1;
+    let depth = 0;
     // skip opening brace
     i++;
     console.log(tokens)
-    while(i < tokens.length && depth > 0) {
+    while(i < tokens.length) {
         const tk = tokens[i];
-        if(tk.id == "lbrace") {
-            // go into another block statement
-            depth++;
-            if(depth > 1) body.push(tk);
-        } else if(tk.id == "rbrace") {
-            // move up a level
-            depth--;
-            if(depth > 1) body.push(tk);
-            else break;
-        } else {
-            body.push(tk);
-        }
+        if(tk.id == "lbrace") depth++;
+        if(tk.id == "rbrace") depth--;
+        if(depth == 0) break;
+        body.push(tk);
         i++;
     }
+    i++;
+    console.log(depth);
     // Handle unterminated block statements
     if(depth > 0) throw new UnterminatedStatementError("block", "}", tokens[i - 1]);
     let parsedBody = [];
@@ -769,6 +763,28 @@ function parseCond(tokens, i) {
     }
     return { cond, next: i };
 }
+function parseParamList(tokens, i) {
+    const list = [];
+    let curArg = [];
+    while(i < tokens.length && tokens[i].id != "rparen") {
+        // proccess params
+        if(tokens[i].id == "comma") {
+            list.push(curArg);
+            curArg = [];
+            i++;
+            continue;
+        }
+        curArg.push(tokens[i]);
+        i++;
+    }
+    if(curArg.length) list.push(curArg);
+    const parsedList = [];
+    let j = 0;
+    while(j < list.length) {
+        parsedList.push(parseParam(list[j]));
+    }
+    return { list: parsedList, next: i };
+}
 function parseClass(tokens, i) {
     let body = [];
     let depth = 1;
@@ -793,25 +809,18 @@ function parseClass(tokens, i) {
     let j = 0;
     while(j < body.length) {
         const tk = body[j];
+        console.log(tk);
         if(tk.id == "keyword" && tk.val == "builder") {
             const builder = [];
             j++;
-            if(tokens[j] && tokens[j].id == "lparen") {
-                j++;
-                const args = parseArguments(tokens, j);
-                builder.push(args.args);
-                j = args.next;
-            }
+            console.log(body[j]);
+            const list = parseParamList(body, j);
+            builder.push(list.list);
+            j = list.next;
+            console.log(list);
             const block = parseBlock(body, j);
-            let x = 0;
-            const parsedBlock = [];
-            while(x < block.node.val.length) {
-                const expr = parseExpr(block.node.val, x);
-                x = expr.next;
-                parsedBlock.push(expr.node);
-            }
-            meta.builder = parsedBlock;
-            j = x;
+            meta.builder = block.node.val;
+            j = block.next;
             continue;
         }
         if(tk.id == "id") {
