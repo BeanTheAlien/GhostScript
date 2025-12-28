@@ -20,7 +20,7 @@ class HTTPError extends Error {
 class ErrRoot extends Error {
     constructor(msg, name, token) {
         if(!token || !Object.hasOwn(token, "ln") || !Object.hasOwn(token, "col") || !token.ln || !token.col) throw Error(`Received invalid token: ${token}`);
-        super(`${msg} (ln ${token.ln}, col ${token.col})`);
+        super(`${msg} (ln ${token.ln}, col ${token.col}`); //todo: pass tokens
         this.name = name;
     }
 }
@@ -899,6 +899,9 @@ function genInstance(meta, args) {
             }
         }
     }
+}
+function getLine(tokens, ln) {
+    return tokens.filter(tk => tk.ln == ln).map(tk => tk.val).join("");
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
