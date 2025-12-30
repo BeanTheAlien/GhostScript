@@ -19,7 +19,6 @@ class HTTPError extends Error {
 }
 class ErrRoot extends Error {
     constructor(msg, name, token) {
-        if(!token || !Object.hasOwn(token, "ln") || !Object.hasOwn(token, "col") || !token.ln || !token.col) throw Error(`Received invalid token: ${token}`);
         // - for col - 1
         // ^ for len val
         // - for len str ln - col
