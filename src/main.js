@@ -72,8 +72,8 @@ class Runtime {
     set(k, v) {
         this.scope[k] = v;
     }
-    rm(nm) {
-        delete this.scope[nm];
+    rm(k) {
+        delete this.scope[k];
     }
 }
 class Log {
@@ -84,8 +84,64 @@ class Log {
         const date = new Date();
         this.log.push(`${msg} (${date.toISOString()})`);
     }
-    MkVar(vName, vVal, vScope) {
-        this.write(`Created variable ${vName} with value ${vVal} in scope ${vScope}.`);
+    make(t, n, v, s) {
+        this.write(`Created ${t} ${n} with value ${v} in scope ${s}.`);
+    }
+    MkVar(n, v, s) {
+        this.make("variable", n, v, s);
+    }
+    MkFn(n, v, s) {
+        this.make("function", n, v, s);
+    }
+    MkMth(n, v, s) {
+        this.make("method", n, v, s);
+    }
+    asgn(t, n, v) {
+        this.write(`Assigned ${t} ${n} to ${v}.`);
+    }
+    AsgnVar(n, v) {
+        this.asgn("variable", n, v);
+    }
+    AsgnProp(n, v) {
+        this.asgn("property", n, v);
+    }
+    CallFn(n, a) {
+        this.write(`Called function ${n} with arguments ${a}.`);
+    }
+    CallMth(n, a, t) {
+        this.write(`Called method ${n} with arguments ${a} on target ${t}.`);
+    }
+    gets(t, n) {
+        this.write(`Got ${t} ${n}.`);
+    }
+    GetVar(n) {
+        this.gets("variable", n);
+    }
+    GetFn(n) {
+        this.gets("function", n);
+    }
+    GetMth(n) {
+        this.gets("method", n);
+    }
+    GetProp(n) {
+        this.gets("property", n);
+    }
+}
+class Scope {
+    constructor(cont) {
+        this.cont = cont;
+    }
+    has(k) {
+        return Object.hasOwn(this.cont, k);
+    }
+    get(k) {
+        return this.cont[k];
+    }
+    set(k, v) {
+        this.cont[k] = v;
+    }
+    rm(k) {
+        delete this.cont[k];
     }
 }
 
