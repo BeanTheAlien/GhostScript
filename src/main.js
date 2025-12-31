@@ -76,6 +76,18 @@ class Runtime {
         delete this.scope[nm];
     }
 }
+class Log {
+    constructor() {
+        this.log = [];
+    }
+    write(msg) {
+        const date = new Date();
+        this.log.push(`${msg} (${date.toISOString()})`);
+    }
+    MkVar(vName, vVal, vScope) {
+        this.write(`Created variable ${vName} with value ${vVal} in scope ${vScope}.`);
+    }
+}
 
 var runtime = new Runtime();
 runtime.set("true", true);
@@ -84,6 +96,7 @@ runtime.set("null", null);
 runtime.set("undefined", undefined);
 var moduleDev = null;
 const raw = "https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost";
+const log = new Log();
 
 async function main() {
     //const json = fs.readFileSync("grammar.json", "utf8");
