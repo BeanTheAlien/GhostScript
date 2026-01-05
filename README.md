@@ -173,6 +173,7 @@ Try running your script - you should see "Hello, World!".
 - Started adding class support. (untested) (17/12/2025)
 - Removed cache, because it was broken. (19/12/2025)
 - Worked on class support. (24/12/2025)
+- Removed class parsing for a future update. (05/01/2025)
 
 # Roadmap
 - Further variable support.
