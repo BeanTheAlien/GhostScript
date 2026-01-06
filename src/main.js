@@ -629,6 +629,26 @@ function parseMods(tokens, i) {
     }
     return { mods, next: i };
 }
+// function isProp(tokens, i) {
+//     // if at n tokens in, we see a lparen, then its a method
+//     // use a counter to make it non-greedy
+//     // if dot is hit, continue consuming (ie, array.length)
+//     // once no more dots are found, thats the full prop ref
+//     let c = 1;
+//     while(i < tokens.length) {
+//         if(c == 0) {
+//             if(tokens[i+1] && tokens[i+1].id == "lparen") return false;
+//         }
+//         if(tokens[i].id == "dot") {
+//             c++;
+//             i++;
+//             continue;
+//         }
+//         i++;
+//         c--;
+//     }
+//     return true;
+// }
 function parseExpr(tokens, i) {
     let { node, next } = parsePrim(tokens, i);
     while(tokens[next] && (tokens[next].id == "dot" || tokens[next].id == "lparen")) {
@@ -995,6 +1015,19 @@ function parsePrim(tokens, i) {
     //     return { node: { type: "ClassDeclaration", val: [header, body] }, next: body.next + 1 };
     // }
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "lbracket") {
+        if(tokens[i+2] && tokens[i+2].id == "eqls") {
+            if(!tokens[i+3]) throw new UnexpectedTerminationError("property set", tokens[i+2]);
+            // treat it as a property set
+            const propSet = parsePropGet(tokens, i);
+            if(!propSet.props.length) throw new UnexpectedTerminationError("prop set", tokens[i+1]);
+            if(propSet.props.length > 1) {
+                // then it must be assigning to an array, else throw error
+                if(tokens[i+3].id != "lbracket") throw new gsSyntaxError("array", "multi-prop set", tokens[i+3]);
+                const arr = parseArr(tokens, i + 3);
+                return { node: { type: "PropSet", val: [token, propSet.props, arr.node.val] }, next: arr.next }
+            }
+            return { node: { type: "PropSet", val: [token, propSet.props, parseExpr(tokens, i+3)] }, next: propSet.next };
+        }
         if(runtime.has(token.val) && Array.isArray(runtime.get(token.val))) {
             const access = parseArrAccess(tokens, i);
             return { node: { type: "ArrayAccess", val: [token.val, access.poses] }, next: access.next };
@@ -1021,15 +1054,15 @@ function parsePrim(tokens, i) {
         const object = obj.obj;
         return { node: { type: "Literal", val: object }, next: obj.next };
     }
-    if(token.id == "keyword" && token.val == "new") {
-        if(tokens[i+1] && tokens[i+1].id == "id") {
-            i++;
-            if(runtime.has(tokens[i])) {
-                const args = parseArguments(tokens, i+1);
-                return { node: { type: "InstanceCreation", val: [tokens[i].val, args.args] }, next: args.next };
-            }
-        }
-    }
+    // if(token.id == "keyword" && token.val == "new") {
+    //     if(tokens[i+1] && tokens[i+1].id == "id") {
+    //         i++;
+    //         if(runtime.has(tokens[i])) {
+    //             const args = parseArguments(tokens, i+1);
+    //             return { node: { type: "InstanceCreation", val: [tokens[i].val, args.args] }, next: args.next };
+    //         }
+    //     }
+    // }
     if(token.id == "id") return { node: { type: "Identifier", val: token.val }, next: i + 1 };
     if(token.id == "string") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "num") return { node: { type: "Literal", val: Number(token.val) }, next: i + 1 };
@@ -1344,6 +1377,12 @@ function interp(node) {
             const [header, body] = node.val;
             runtime.set(header, body);
             break;
+        }
+        case "PropSet": {
+            const [asgn, props, val] = node.val;
+            if(Array.isArray(props)) {
+                for(let i = 0; i < props.length; i++) runtime.get(asgn.val)[i] = props[i];
+            }
         }
         // case "InstanceCreation":
         //     const [cl, args] = node.val;
