@@ -153,6 +153,7 @@ runtime.set("undefined", undefined);
 var moduleDev = null;
 const raw = "https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost";
 const log = new Log();
+const oprList = ["==", "!=", ">=", "<=", "&&", "||", "=>", "<", ">"];
 
 async function main() {
     //const json = fs.readFileSync("grammar.json", "utf8");
@@ -486,7 +487,6 @@ function parseBlock(tokens, i) {
     let depth = 0;
     // skip opening brace
     i++;
-    console.log(tokens)
     while(i < tokens.length) {
         const tk = tokens[i];
         if(tk.id == "lbrace") depth++;
@@ -496,7 +496,6 @@ function parseBlock(tokens, i) {
         i++;
     }
     i++;
-    console.log(depth);
     // Handle unterminated block statements
     if(depth > 0) throw new UnterminatedStatementError("block", "}", tokens[i - 1]);
     let parsedBody = [];
@@ -577,6 +576,34 @@ function parseBlockHeader(tokens, i) {
             j = parsed.next;
         }
         return { node: { type: "ConditionalHeader", val: [header, parsedCond] }, next: i + 1 };
+    }
+    // for loop
+    if(header == "for") {
+        i++;
+        const loop = [];
+        let depth = 0;
+        while(i < tokens.length) {
+            const tk = tokens[i];
+            if(tk.id == "lparen") depth++;
+            if(tk.id == "rparen") depth--;
+            if(depth == 0) break;
+            loop.push(tk);
+            i++;
+        }
+        const chunks = [];
+        let curArg = [];
+        let j = 0;
+        while(j < loop.length) {
+            const tk = loop[j];
+            if(tk.id == "semi") {
+                if(curArg.length) chunks.push(curArg);
+                curArg = [];
+            } else {
+                curArg.push(tk);
+            }
+            j++;
+        }
+        if(curArg.length) chunks.push(curArg);
     }
     throw new Error(`Unknown block header '${header}'.`);
 }
@@ -1037,17 +1064,21 @@ function parsePrim(tokens, i) {
             return { node: { type: "PropGet", val: [token, propGet.props] }, next: propGet.next };
         }
     }
-    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && !["==", "!=", ">=", "<=", "&&", "||", "=>", "<", ">"].includes(tokens[i+1].val))) {
+    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && !oprList.includes(tokens[i+1].val))) {
         const m = parseEquation(tokens, i);
         return { node: { type: "Literal", val: math.evaluate(m.eq.join(""), { ...runtime.scope }) }, next: m.next };
     }
     // to resolve operator support extension, check if the following value is an opr
     // supporting multiple possible lhs types
     // returns a literal boolean value
-    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && ["==", "!=", ">=", "<=", "&&", "||", "=>", "<", ">"].includes(tokens[i+1].val))) {
+    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && oprList.includes(tokens[i+1].val))) {
         const expr = parseCond(tokens, i);
         const res = resolveCond(expr.cond);
         return { node: { type: "Literal", val: res }, next: expr.next };
+    }
+    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "opr" && tokens[i+2] && tokens[i+2].id == "opr" && tokens[i+1].val == tokens[i+2].val) {
+        // double opr, like ++, --
+        return { node: { type: "IdentifierOperation", val: [token.val, tokens[i+1].val] }, next: i+2 };
     }
     if(token.id == "lbrace") {
         const obj = parseObject(tokens, i);
@@ -1380,10 +1411,18 @@ function interp(node) {
         }
         case "PropSet": {
             const [asgn, props, val] = node.val;
+            const ent = runtime.get(asgn.val);
             if(Array.isArray(props)) {
-                for(let i = 0; i < props.length; i++) runtime.get(asgn.val)[i] = props[i];
-            }
+                for(let i = 0; i < props.length; i++) ent[i] = props[i];
+            } else ent[props[0]] = val;
+            runtime.set(asgn.val, ent);
         }
+        case "IdentifierOperation":
+            const id = node.val[0];
+            const opr = node.val[1];
+            let v = runtime.get(id);
+            if(opr == "+") {}
+            break;
         // case "InstanceCreation":
         //     const [cl, args] = node.val;
         //     return new interp({ type: "CallExpression", val: runtime.get(cl).meta.builder(args) });
