@@ -176,6 +176,7 @@ Try running your script - you should see "Hello, World!".
 - Removed class parsing for a future update. (05/01/2025)
 - Worked on property set. (06/01/2025)
 - Started adding for loop, started adding double-opr assignment. (06/01/2025)
+- Continued development on double-opr support. (06/01/2025)
 
 # Roadmap
 - Further variable support.

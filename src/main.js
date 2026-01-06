@@ -1076,9 +1076,13 @@ function parsePrim(tokens, i) {
         const res = resolveCond(expr.cond);
         return { node: { type: "Literal", val: res }, next: expr.next };
     }
-    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "opr" && tokens[i+2] && tokens[i+2].id == "opr" && tokens[i+1].val == tokens[i+2].val) {
+    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "opr" && tokens[i+2] && ((tokens[i+2].id == "opr" && tokens[i+1].val == tokens[i+2].val) || tokens[i+2].id == "eqls")) {
+        let quan = 1;
+        // supports <id><opr><opr|eqls><num|id>
+        // where <num|id> => <num>
+        if(tokens[i+3] && (tokens[i+3].id == "num" || (tokens[i+3].id == "id" && typeof runtime.get(tokens[i+3].val) == "number"))) quan = tokens[i+3].id == "num" ? Number(tokens[i+3].val) : Number(runtime.get(tokens[i+3].val));
         // double opr, like ++, --
-        return { node: { type: "IdentifierOperation", val: [token.val, tokens[i+1].val] }, next: i+2 };
+        return { node: { type: "IdentifierOperation", val: [token.val, tokens[i+1].val, quan] }, next: i+2 };
     }
     if(token.id == "lbrace") {
         const obj = parseObject(tokens, i);
@@ -1417,12 +1421,18 @@ function interp(node) {
             } else ent[props[0]] = val;
             runtime.set(asgn.val, ent);
         }
-        case "IdentifierOperation":
-            const id = node.val[0];
-            const opr = node.val[1];
+        case "IdentifierOperation": {
+            const [id, opr, quan] = node.val;
             let v = runtime.get(id);
-            if(opr == "+") {}
+            if(opr == "+") v += quan;
+            if(opr == "-") v -= quan;
+            if(opr == "*") v *= quan;
+            if(opr == "/") v /= quan;
+            if(opr == "%") v %= quan;
+            if(opr == "^") v = Math.pow(v, quan);
+            runtime.set(id, v);
             break;
+        }
         // case "InstanceCreation":
         //     const [cl, args] = node.val;
         //     return new interp({ type: "CallExpression", val: runtime.get(cl).meta.builder(args) });
