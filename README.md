@@ -178,6 +178,7 @@ Try running your script - you should see "Hello, World!".
 - Started adding for loop, started adding double-opr assignment. (06/01/2025)
 - Continued development on double-opr support. (06/01/2025)
 - Continued development on double-opr support. (07/01/2025)
+- More parsing on for loops. (07/01/2025)
 
 # Roadmap
 - Further variable support.

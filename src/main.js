@@ -590,6 +590,7 @@ function parseBlockHeader(tokens, i) {
             loop.push(tk);
             i++;
         }
+        if(depth > 0) throw new UnterminatedStatementError("block", "}", tokens[i - 1]);
         const chunks = [];
         let curArg = [];
         let j = 0;
@@ -604,6 +605,18 @@ function parseBlockHeader(tokens, i) {
             j++;
         }
         if(curArg.length) chunks.push(curArg);
+        if(!chunks.length) throw new UnexpectedTerminationError(tokens[i]);
+        if(chunks.length == 1) {
+            // just an expression
+            const expr = parseExpr(chunks, 0);
+            if(typeof expr.node.val != "number") throw new gsTypeError(typeof expr.node.val, "number", chunks[0]);
+            return { node: { type: "ForLoopMini", val: expr.node }, next: i+1 };
+        }
+        if(chunks.length == 3) {
+            // a full for loop
+            const parsed = chunks.map((_, i) => parseExpr(chunks, i));
+            return { node: { type: "ForLoopFull", val: parsed }, next: i+1 };
+        }
     }
     throw new Error(`Unknown block header '${header}'.`);
 }
