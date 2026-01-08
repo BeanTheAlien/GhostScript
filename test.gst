@@ -1,5 +1,5 @@
 import ghost
 
 var foo = 42
-foo++
+foo--4
 print(foo)

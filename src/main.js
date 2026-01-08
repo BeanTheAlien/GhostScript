@@ -1078,13 +1078,13 @@ function parsePrim(tokens, i) {
         }
     }
     console.log(tokens)
-    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "opr" && tokens[i+2] && ((tokens[i+2].id == "opr" && tokens[i+1].val == tokens[i+2].val) || tokens[i+2].id == "eqls") && ((tokens[i+3] && (tokens[i+3].id == "num" || tokens[i+3].id == "id")) || (tokens[i+3] && (runtime.has(tokens[i+3] && typeof runtime.get(tokens[i+3]) != "number"))) || !tokens[i+3])) {
+    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "opr" && tokens[i+2] && ((tokens[i+2].id == "opr" && tokens[i+1].val == tokens[i+2].val) || tokens[i+2].id == "eqls") && (!tokens[i+3] || tokens[i+3].id == "num" || tokens[i+3].id == "id")) {
         let quan = 1;
         // supports <id><opr><opr|eqls><num|id>
         // where <num|id> => <num>
-        if(tokens[i+3] && (tokens[i+3].id == "num" || (tokens[i+3].id == "id" && typeof runtime.get(tokens[i+3].val) == "number"))) quan = tokens[i+3].id == "num" ? Number(tokens[i+3].val) : Number(runtime.get(tokens[i+3].val));
+        if(tokens[i+3]) quan = tokens[i+3].id == "num" ? Number(tokens[i+3].val) : typeof runtime.get(tokens[i+3].val) == "number" ? Number(runtime.get(tokens[i+3].val)) : 1;
         // double opr, like ++, --
-        return { node: { type: "IdentifierOperation", val: [token.val, tokens[i+1].val, quan] }, next: i+2 };
+        return { node: { type: "IdentifierOperation", val: [token.val, tokens[i+1].val, quan] }, next: i+(tokens[i+3] ? 3 : 2) };
     }
     if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && !oprList.includes(tokens[i+1].val))) {
         const m = parseEquation(tokens, i);
@@ -1438,6 +1438,9 @@ function interp(node) {
         case "IdentifierOperation": {
             const [id, opr, quan] = node.val;
             let v = runtime.get(id);
+            console.log(id);
+            console.log(opr);
+            console.log(quan);
             if(opr == "+") v += quan;
             if(opr == "-") v -= quan;
             if(opr == "*") v *= quan;
