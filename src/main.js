@@ -1440,7 +1440,7 @@ function interp(node) {
             console.log(props);
             console.log(val);
             console.log(ent);
-            for(let i = 0; i < props.length; i++) ent[i] = props[i];
+            for(let i = 0; i < val.length; i++) ent[props[i]] = val[i];
             runtime.set(asgn.val, ent);
             break;
         }

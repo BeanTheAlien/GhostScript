@@ -182,6 +182,7 @@ Try running your script - you should see "Hello, World!".
 - Continued development on double-opr support. (08/01/2025)
 - Worked on property SET bracket parsing fixes. (09/01/2025)
 - Worked on property SET bracket parsing fixes. (09/01/2025)
+- Fixed an oversight in property SET bracket. (09/01/2025)
 
 # Roadmap
 - Further variable support.
