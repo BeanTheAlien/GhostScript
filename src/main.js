@@ -917,6 +917,13 @@ function parseParamList(tokens, i) {
     }
     return { list: parsedList, next: i };
 }
+function findEndBracket(tokens, i) {
+    while(i < tokens.length) {
+        if(tokens[i].id == "rbracket") return i+1;
+        i++;
+    }
+    throw new UnterminatedStatementError("array", "]", tokens[i]);
+}
 function parseClass(tokens, i) {
     let body = [];
     let depth = 1;
@@ -1055,18 +1062,22 @@ function parsePrim(tokens, i) {
     //     return { node: { type: "ClassDeclaration", val: [header, body] }, next: body.next + 1 };
     // }
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "lbracket") {
-        if(tokens[i+2] && tokens[i+2].id == "eqls") {
-            if(!tokens[i+3]) throw new UnexpectedTerminationError("property set", tokens[i+2]);
+        const next = findEndBracket(tokens, i);
+        console.log(next);
+        console.log(tokens.slice(next));
+        if(tokens[next] && tokens[next].id == "eqls") {
+            if(!tokens[next+1]) throw new UnexpectedTerminationError("property set", tokens[next]);
             // treat it as a property set
             const propSet = parsePropGet(tokens, i);
-            if(!propSet.props.length) throw new UnexpectedTerminationError("prop set", tokens[i+1]);
+            if(!propSet.props.length) throw new UnexpectedTerminationError("property set", tokens[next-1]);
             if(propSet.props.length > 1) {
                 // then it must be assigning to an array, else throw error
-                if(tokens[i+3].id != "lbracket") throw new gsSyntaxError("array", "multi-prop set", tokens[i+3]);
-                const arr = parseArr(tokens, i + 3);
-                return { node: { type: "PropSet", val: [token, propSet.props, arr.node.val] }, next: arr.next }
+                if(tokens[next+1].id != "lbracket") throw new gsSyntaxError("array", "multi-property set", tokens[next+1]);
+                const arr = parseArr(tokens, next+1);
+                return { node: { type: "PropSet", val: [token, propSet.props, arr.node] }, next: arr.next }
             }
-            return { node: { type: "PropSet", val: [token, propSet.props, parseExpr(tokens, i+3)] }, next: propSet.next };
+            const expr = parseExpr(tokens, next+1);
+            return { node: { type: "PropSet", val: [token, propSet.props, expr.node] }, next: expr.next };
         }
         if(runtime.has(token.val) && Array.isArray(runtime.get(token.val))) {
             const access = parseArrAccess(tokens, i);
@@ -1077,7 +1088,7 @@ function parsePrim(tokens, i) {
             return { node: { type: "PropGet", val: [token, propGet.props] }, next: propGet.next };
         }
     }
-    console.log(tokens)
+    //console.log(tokens)
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "opr" && tokens[i+2] && ((tokens[i+2].id == "opr" && tokens[i+1].val == tokens[i+2].val) || tokens[i+2].id == "eqls") && (!tokens[i+3] || tokens[i+3].id == "num" || tokens[i+3].id == "id")) {
         let quan = 1;
         // supports <id><opr><opr|eqls><num|id>

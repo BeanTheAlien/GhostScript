@@ -1,5 +1,5 @@
 import ghost
 
-var foo = 42
-foo--4
+var foo = [123]
+foo[0] = 42
 print(foo)
