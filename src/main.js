@@ -1075,7 +1075,8 @@ function parsePrim(tokens, i) {
             }
             const expr = parseExpr(tokens, propSet.next+1);
             return { node: { type: "PropSet", val: [token, propSet.props, expr.node] }, next: expr.next };
-        } else if(runtime.has(token.val) && Array.isArray(runtime.get(token.val))) {
+        }
+        if(runtime.has(token.val) && Array.isArray(runtime.get(token.val))) {
             const access = parseArrAccess(tokens, i);
             return { node: { type: "ArrayAccess", val: [token.val, access.poses] }, next: access.next };
         } else if(runtime.has(token.val)) {
@@ -1393,7 +1394,7 @@ function interp(node) {
                 const string = JSON.stringify(entry);
                 for(let i = 0; i < poses.length; i++) els.push(string.at(poses[i]));
             } else for(let i = 0; i < poses.length; i++) els.push(entry.at(poses[i]));
-            return els;
+            return els.length == 1 ? els[0] : els;
         
         case "ConditionalHeader":
             const [header, headerCond, condBody] = node.val;
@@ -1428,7 +1429,7 @@ function interp(node) {
             const vals = [];
             const ref = runtime.get(token.val);
             for(let i = 0; i < props.length; i++) vals.push(ref[props[i]]);
-            return vals;
+            return vals.length == 1 ? vals[0] : vals;
         case "ClassDeclaration": {
             const [header, body] = node.val;
             runtime.set(header, body);
@@ -1437,10 +1438,8 @@ function interp(node) {
         case "PropSet": {
             const [asgn, props, val] = node.val;
             const ent = runtime.get(asgn.val);
-            console.log(props);
-            console.log(val);
-            console.log(ent);
-            for(let i = 0; i < val.length; i++) ent[props[i]] = val[i];
+            if(Array.isArray(val)) for(let i = 0; i < val.length; i++) ent[props[i]] = val[i].val;
+            else ent[props[0]] = val.val;
             runtime.set(asgn.val, ent);
             break;
         }
