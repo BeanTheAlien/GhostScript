@@ -181,6 +181,7 @@ Try running your script - you should see "Hello, World!".
 - More parsing on for loops. (07/01/2025)
 - Continued development on double-opr support. (08/01/2025)
 - Worked on property SET bracket parsing fixes. (09/01/2025)
+- Worked on property SET bracket parsing fixes. (09/01/2025)
 
 # Roadmap
 - Further variable support.

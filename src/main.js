@@ -1062,21 +1062,18 @@ function parsePrim(tokens, i) {
     //     return { node: { type: "ClassDeclaration", val: [header, body] }, next: body.next + 1 };
     // }
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "lbracket") {
-        const next = findEndBracket(tokens, i);
-        console.log(next);
-        console.log(tokens.slice(next));
-        if(tokens[next] && tokens[next].id == "eqls") {
-            if(!tokens[next+1]) throw new UnexpectedTerminationError("property set", tokens[next]);
+        const propSet = parsePropGet(tokens, i);
+        if(tokens[propSet.next] && tokens[propSet.next].id == "eqls") {
+            if(!tokens[propSet.next+1]) throw new UnexpectedTerminationError("property set", tokens[propSet.next]);
             // treat it as a property set
-            const propSet = parsePropGet(tokens, i);
-            if(!propSet.props.length) throw new UnexpectedTerminationError("property set", tokens[next-1]);
+            if(!propSet.props.length) throw new UnexpectedTerminationError("property set", tokens[propSet.next-1]);
             if(propSet.props.length > 1) {
                 // then it must be assigning to an array, else throw error
-                if(tokens[next+1].id != "lbracket") throw new gsSyntaxError("array", "multi-property set", tokens[next+1]);
-                const arr = parseArr(tokens, next+1);
+                if(tokens[propSet.next+1].id != "lbracket") throw new gsSyntaxError("array", "multi-property set", tokens[propSet.next+1]);
+                const arr = parseArr(tokens, propSet.next+1);
                 return { node: { type: "PropSet", val: [token, propSet.props, arr.node] }, next: arr.next }
             }
-            const expr = parseExpr(tokens, next+1);
+            const expr = parseExpr(tokens, propSet.next+1);
             return { node: { type: "PropSet", val: [token, propSet.props, expr.node] }, next: expr.next };
         }
         if(runtime.has(token.val) && Array.isArray(runtime.get(token.val))) {
@@ -1441,17 +1438,19 @@ function interp(node) {
         case "PropSet": {
             const [asgn, props, val] = node.val;
             const ent = runtime.get(asgn.val);
-            if(Array.isArray(props)) {
-                for(let i = 0; i < props.length; i++) ent[i] = props[i];
-            } else ent[props[0]] = val;
+            console.log(props);
+            console.log(val);
+            console.log(ent);
+            for(let i = 0; i < props.length; i++) ent[i] = props[i];
             runtime.set(asgn.val, ent);
+            break;
         }
         case "IdentifierOperation": {
             const [id, opr, quan] = node.val;
             let v = runtime.get(id);
-            console.log(id);
-            console.log(opr);
-            console.log(quan);
+            // console.log(id);
+            // console.log(opr);
+            // console.log(quan);
             if(opr == "+") v += quan;
             if(opr == "-") v -= quan;
             if(opr == "*") v *= quan;
