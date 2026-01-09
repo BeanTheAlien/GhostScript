@@ -22,7 +22,7 @@ class ErrRoot extends Error {
         // - for col - 1
         // ^ for len val
         // - for len str ln - col
-        super(`${msg} (ln ${token.ln}, col ${token.col}`); //todo: pass tokens
+        super(`${msg} (ln ${token.ln}, col ${token.col})`); //todo: pass tokens
         this.name = name;
     }
 }
