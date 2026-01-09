@@ -1075,8 +1075,7 @@ function parsePrim(tokens, i) {
             }
             const expr = parseExpr(tokens, propSet.next+1);
             return { node: { type: "PropSet", val: [token, propSet.props, expr.node] }, next: expr.next };
-        }
-        if(runtime.has(token.val) && Array.isArray(runtime.get(token.val))) {
+        } else if(runtime.has(token.val) && Array.isArray(runtime.get(token.val))) {
             const access = parseArrAccess(tokens, i);
             return { node: { type: "ArrayAccess", val: [token.val, access.poses] }, next: access.next };
         } else if(runtime.has(token.val)) {
