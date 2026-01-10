@@ -184,6 +184,7 @@ Try running your script - you should see "Hello, World!".
 - Worked on property SET bracket parsing fixes. (09/01/2025)
 - Fixed an oversight in property SET bracket. (09/01/2025)
 - Fixed issues [#15](https://github.com/BeanTheAlien/GhostScript/issues/15) and [#16](https://github.com/BeanTheAlien/GhostScript/issues/16).
+- Added GhostScript VS Code extension path (/ghostscript). (10/01/2025)
 
 # Roadmap
 - Further variable support.
