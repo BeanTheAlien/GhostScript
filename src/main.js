@@ -445,8 +445,17 @@ async function parser(tokens) {
             if(imp.type == "file") {
                 const f = imp.module[0];
                 if(!fs.existsSync(path.join(__dirname, f))) throw new IONoFileFoundError(f, tk);
-                const fChunks = f.split("+");
+                const chunks = f.split("+");
                 const fileContent = fs.readFileSync(f, /*fChunks.length == 2 && fChunks[0] != "" && fChunks[1] != "" ? fChunks[1] :*/ "utf8");
+                if(chunks.length == 2 && chunks[0] != "" && chunks[1] != "") {
+                    const encoding = chunks[1];
+                    if(encoding == "utf8") return fileContent;
+                    // from Base64
+                    if(encoding == "base64") return Buffer.from(fileContent, "base64").toString("utf8");
+                    // from Binary
+                    if(encoding == "bin") return Buffer.from(fileContent, "binary").toString("utf8");
+                }
+                return fileContent;
             } else {
                 // const modName = tokens[i+1].val;
                 const lib = await getModule(...imp.module);
