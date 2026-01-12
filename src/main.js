@@ -1780,23 +1780,24 @@ async function getModuleFile(pathStr, token) {
     const stat = fs.statSync(dir);
     if(stat.isDirectory()) {
         // read files from index.json
-        if(fs.existsSync(path.join(dir, "index.json"))) {
-            const index = JSON.parse(fs.readFileSync(path.join(dir, "index.json"), "utf8"));
-            for(const f of index.files) {
+        const recurse = (files) => {
+            for(const f of files) {
                 // get file (removing '.js' ending)
                 const file = await getModuleFile(path.join(dir, f.slice(0, -3)), token);
                 inject(file);
                 await resolveDeps(file);
             }
+        }
+        if(fs.existsSync(path.join(dir, "index.json"))) {
+            const index = JSON.parse(fs.readFileSync(path.join(dir, "index.json"), "utf8"));
+            recurse(index.files);
         } else {
             const content = fs.readdirSync(dir, { encoding: "utf8", withFileTypes: true, recursive: true });
-            for(const f of content) {
-                if(f.isDirectory()) continue;
-                const file = await getModuleFile(path.join(dir, f.name.slice(0, -3)), token);
-            }
+            recurse(content.filter(f => f.isDirectory()).map(f => path.join(dir, f)));
         }
     } else if(stat.isFile()) {
-        //
+        const js = fs.readFileSync(dir);
+        return await processImport(js);
     } else {
         throw new IOInvalidPathError(pathStr, token);
     }
