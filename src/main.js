@@ -447,13 +447,21 @@ async function parser(tokens) {
                 if(!fs.existsSync(path.join(__dirname, f))) throw new IONoFileFoundError(f, tk);
                 const chunks = f.split("+");
                 const fileContent = fs.readFileSync(f, /*fChunks.length == 2 && fChunks[0] != "" && fChunks[1] != "" ? fChunks[1] :*/ "utf8");
+                let cont;
                 if(chunks.length == 2 && chunks[0] != "" && chunks[1] != "") {
+                    const decode = (encode) => Buffer.from(fileContent, encode).toString("utf8");
                     const encoding = chunks[1];
                     if(encoding == "utf8") return fileContent;
                     // from Base64
-                    if(encoding == "base64") return Buffer.from(fileContent, "base64").toString("utf8");
+                    if(encoding == "base64") return decode("base64");
                     // from Binary
-                    if(encoding == "bin") return Buffer.from(fileContent, "binary").toString("utf8");
+                    if(encoding == "bin") return decode("binary");
+                    // from ASCII
+                    if(encoding == "ascii") return decode("ascii");
+                    // from Hexadecimal
+                    if(encoding == "hex") return decode("hex");
+                    // from Universal Character Set
+                    if(encoding == "ucs") return decode("ucs");
                 }
                 return fileContent;
             } else {
