@@ -1779,8 +1779,7 @@ async function getModuleFile(pathStr, token) {
     if(!fs.existsSync(dir)) throw new IONoFileFoundError(pathStr, token);
     const stat = fs.statSync(dir);
     if(stat.isDirectory()) {
-        // read files from index.json
-        const recurse = (files) => {
+        const recurse = async (files) => {
             for(const f of files) {
                 // get file (removing '.js' ending)
                 const file = await getModuleFile(path.join(dir, f.slice(0, -3)), token);
@@ -1789,11 +1788,14 @@ async function getModuleFile(pathStr, token) {
             }
         }
         if(fs.existsSync(path.join(dir, "index.json"))) {
+            // read files from index.json
             const index = JSON.parse(fs.readFileSync(path.join(dir, "index.json"), "utf8"));
             recurse(index.files);
         } else {
+            // read the entire directory
             const content = fs.readdirSync(dir, { encoding: "utf8", withFileTypes: true, recursive: true });
-            recurse(content.filter(f => f.isDirectory()).map(f => path.join(dir, f)));
+            // recurse on files only, converting Dirent objects to string
+            recurse(content.filter(f => f.isDirectory()).map(f => f.name));
         }
     } else if(stat.isFile()) {
         const js = fs.readFileSync(dir);
@@ -2005,7 +2007,7 @@ function findFunction(name) {
         const mod = runtime.modules[modName];
         if (!mod || !mod.exports) continue;
         // if module requested root, skip direct matching unless someone explicitly called without module prefix.
-        if (!mod.meta || mod.meta.reqroot === false) {
+        if (!mod.meta || mod.meta.reqroot == false) {
             if (mod.exports[name]) return mod.exports[name];
         }
     }
@@ -2045,13 +2047,13 @@ function resolveCond(cond) {
             const [lhs,, rhs] = cond;
             if(lhs.type == "Identifier") {
                 if(rhs.type == "Identifier") {
-                    return { lhs: runtime.scope[lhs.val], rhs: runtime.scope[rhs.val] };
+                    return { lhs: runtime.get(lhs.val), rhs: runtime.get(rhs.val) };
                 } else {
-                    return { lhs: runtime.scope[lhs.val], rhs: rhs.val };
+                    return { lhs: runtime.get(lhs.val), rhs: rhs.val };
                 }
             } else {
                 if(rhs.type == "Identifier") {
-                    return { lhs: lhs.val, rhs: runtime.scope[rhs.val] };
+                    return { lhs: lhs.val, rhs: runtime.get(rhs.val) };
                 } else {
                     return { lhs: lhs.val, rhs: rhs.val };
                 }
@@ -2063,7 +2065,7 @@ function resolveCond(cond) {
     if(cond.length == 1) {
         const ent = cond[0];
         if(ent.type == "Identifier") {
-            return runtime.has(ent.val) && runtime.scope[ent.val] != undefined;
+            return runtime.has(ent.val) && runtime.get(ent.val) != undefined;
         } else {
             return ent.val != undefined;
         }
