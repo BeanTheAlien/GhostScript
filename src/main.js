@@ -32,6 +32,7 @@ class UnterminatedStatementError extends ErrRoot { constructor(type, char, token
 class gsSyntaxError extends ErrRoot { constructor(char, type, token) { super(`Expected ${char} for ${type}.`, "SyntaxError", token); } }
 class gsTypeError extends ErrRoot { constructor(received, expected, type, token) { super(`Expected '${expected}' for ${type}, got '${received}'.`, "TypeError", token); }  }
 class DuplicateKeyError extends ErrRoot { constructor(k, token) { super(`Received duplicate key '${k}'.`, "DuplicateKeyError", token); } }
+class IONoFileFoundError extends ErrRoot { constructor(f, token) { super(`File '${f}' does not exist or cannot be found.`, "IONoFileFoundError", token); } }
 
 const [,, ...args] = process.argv;
 function hasFlag(flag) {
@@ -441,15 +442,22 @@ async function parser(tokens) {
         if(tk.id == "keyword" && tk.val == "import") {
             const imp = parseImport(tokens, i);
             if(!imp.module.length) throw new UnexpectedTerminationError("import", tk);
-            // const modName = tokens[i+1].val;
-            const lib = await getModule(...imp.module);
-            const impName = imp.module.join(".");
-            // if(!lib) {
-            //     console.error(`Could not load module '${impName}'`);
-            //     break;
-            // }
-            if(lib != 0) inject(lib);
-            // i += 2;
+            if(imp.type == "file") {
+                const f = imp.module[0];
+                if(!fs.existsSync(path.join(__dirname, f))) throw new IONoFileFoundError(f, tk);
+                const fChunks = f.split("+");
+                const fileContent = fs.readFileSync(f, /*fChunks.length == 2 && fChunks[0] != "" && fChunks[1] != "" ? fChunks[1] :*/ "utf8");
+            } else {
+                // const modName = tokens[i+1].val;
+                const lib = await getModule(...imp.module);
+                const impName = imp.module.join(".");
+                // if(!lib) {
+                //     console.error(`Could not load module '${impName}'`);
+                //     break;
+                // }
+                if(lib != 0) inject(lib);
+                // i += 2;
+            }
             i = imp.next;
             continue;
         }
@@ -1153,6 +1161,10 @@ function parseImport(tokens, i) {
     const module = [];
     // skip import statement
     i++;
+    // to allow string-to-file, check if its a string
+    if(tokens[i].id == "string") {
+        return { module: [tokens[i].val], next: i+1, type: "file" };
+    }
     // use a counter to make it non-greedy
     // if dot is hit, continue consuming (ie, ghost.ghost)
     // once no more dots are found, thats the full module
@@ -1168,7 +1180,7 @@ function parseImport(tokens, i) {
         i++;
         c--;
     }
-    return { module, next: i };
+    return { module, next: i, type: "module" };
 }
 function interp(node) {
     // safety: print debugging for malformed nodes

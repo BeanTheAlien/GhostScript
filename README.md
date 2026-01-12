@@ -187,6 +187,7 @@ Try running your script - you should see "Hello, World!".
 - Added GhostScript VS Code extension path (/ghostscript). (10/01/2026)
 - Removed GhostScript VS Code extension path; moved to seperate repo. ([dedicated repo](https://github.com/BeanTheAlien/ghostscript-vsc)) (11/01/2026)
 - Fixed some issues regarding the date on some changelog messages. (11/01/2026)
+- Started implementing file-import. (12/01/2026)
 
 # Roadmap
 - Further variable support.
