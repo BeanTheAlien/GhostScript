@@ -189,6 +189,7 @@ Try running your script - you should see "Hello, World!".
 - Fixed some issues regarding the date on some changelog messages. (11/01/2026)
 - Started implementing file-import. (12/01/2026)
 - Worked on implementing file-import. (12/01/2026)
+- Updated GSDoc API. (12/01/2026)
 
 # Roadmap
 - Further variable support.
