@@ -33,6 +33,7 @@ class gsSyntaxError extends ErrRoot { constructor(char, type, token) { super(`Ex
 class gsTypeError extends ErrRoot { constructor(received, expected, type, token) { super(`Expected '${expected}' for ${type}, got '${received}'.`, "TypeError", token); }  }
 class DuplicateKeyError extends ErrRoot { constructor(k, token) { super(`Received duplicate key '${k}'.`, "DuplicateKeyError", token); } }
 class IONoFileFoundError extends ErrRoot { constructor(f, token) { super(`File '${f}' does not exist or cannot be found.`, "IONoFileFoundError", token); } }
+class IOInvalidPathError extends ErrRoot { constructor(p, token) { super(`Path '${p}' does not resolve to File or Directory.`, "IOInvalidPathError", token); } }
 
 const [,, ...args] = process.argv;
 function hasFlag(flag) {
@@ -447,23 +448,27 @@ async function parser(tokens) {
                 if(!fs.existsSync(path.join(__dirname, f))) throw new IONoFileFoundError(f, tk);
                 const chunks = f.split("+");
                 const fileContent = fs.readFileSync(f, /*fChunks.length == 2 && fChunks[0] != "" && fChunks[1] != "" ? fChunks[1] :*/ "utf8");
-                let cont;
-                if(chunks.length == 2 && chunks[0] != "" && chunks[1] != "") {
-                    const decode = (encode) => Buffer.from(fileContent, encode).toString("utf8");
-                    const encoding = chunks[1];
-                    if(encoding == "utf8") return fileContent;
-                    // from Base64
-                    if(encoding == "base64") return decode("base64");
-                    // from Binary
-                    if(encoding == "bin") return decode("binary");
-                    // from ASCII
-                    if(encoding == "ascii") return decode("ascii");
-                    // from Hexadecimal
-                    if(encoding == "hex") return decode("hex");
-                    // from Universal Character Set
-                    if(encoding == "ucs") return decode("ucs");
+                const resolveEncoding = () => {
+                    if(chunks.length == 2 && chunks[0] != "" && chunks[1] != "") {
+                        const decode = (encode) => Buffer.from(fileContent, encode).toString("utf8");
+                        const encoding = chunks[1];
+                        if(encoding == "utf8") return fileContent;
+                        // from Base64
+                        if(encoding == "base64") return decode("base64");
+                        // from Binary
+                        if(encoding == "bin") return decode("binary");
+                        // from ASCII
+                        if(encoding == "ascii") return decode("ascii");
+                        // from Hexadecimal
+                        if(encoding == "hex") return decode("hex");
+                        // from Universal Character Set
+                        if(encoding == "ucs") return decode("ucs");
+                    }
+                    return fileContent;
                 }
-                return fileContent;
+                const js = resolveEncoding();
+                const lib = await processImport(js);
+                inject(lib);
             } else {
                 // const modName = tokens[i+1].val;
                 const lib = await getModule(...imp.module);
@@ -1768,6 +1773,33 @@ async function getModule(...parts) {
     }
 
     throw new Error(`Could not find module '${url}'.`);
+}
+async function getModuleFile(pathStr, token) {
+    const dir = path.join(__dirname, pathStr);
+    if(!fs.existsSync(dir)) throw new IONoFileFoundError(pathStr, token);
+    const stat = fs.statSync(dir);
+    if(stat.isDirectory()) {
+        // read files from index.json
+        if(fs.existsSync(path.join(dir, "index.json"))) {
+            const index = JSON.parse(fs.readFileSync(path.join(dir, "index.json"), "utf8"));
+            for(const f of index.files) {
+                // get file (removing '.js' ending)
+                const file = await getModuleFile(path.join(dir, f.slice(0, -3)), token);
+                inject(file);
+                await resolveDeps(file);
+            }
+        } else {
+            const content = fs.readdirSync(dir, { encoding: "utf8", withFileTypes: true, recursive: true });
+            for(const f of content) {
+                if(f.isDirectory()) continue;
+                const file = await getModuleFile(path.join(dir, f.name.slice(0, -3)), token);
+            }
+        }
+    } else if(stat.isFile()) {
+        //
+    } else {
+        throw new IOInvalidPathError(pathStr, token);
+    }
 }
 
 async function loadRemoteModule(segments, logicalPath, visited) {
