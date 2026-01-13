@@ -5,6 +5,18 @@ class GSDoc {
     feed(runtime) {
         this.runtime = runtime;
     }
+    /**
+     * Converts a GhostScript function to a string header.
+     * @param {GSFunc} gsFunc - A GhostScript function.
+     * @returns {string} The string version of the header.
+     */
+    fnHeader(gsFunc) {
+        const { gsFuncDesire, gsFuncType, gsFuncName, gsFuncArgs } = gsFunc;
+        return `${gsFuncName}(${gsFuncArgs.map(a => a).join(", ")}): ${gsFuncDesire ? "desire " : ""}${gsFuncType ?? "void"}`;
+    }
+    argStr(gsArg) {
+        const { gsArgDesire, gsArgType, gsArgName, gsArgVal } = gsArg;
+    }
     gen(string) {
         const split = string.split("\n").filter(l => l.startsWith("#"));
         const out = [];
