@@ -192,6 +192,7 @@ Try running your script - you should see "Hello, World!".
 - Updated GSDoc API. (12/01/2026)
 - Updated GSDoc API. (13/01/2026)
 - Added GSDoc.fnHeader, GSDoc.mthHeader. (13/01/2026)
+- Added (untested) support for string interpolation. (with ${...}) (13/01/2026)
 
 # Roadmap
 - Further variable support.

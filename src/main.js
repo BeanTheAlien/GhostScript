@@ -407,6 +407,13 @@ function tokenize(script) {
             tk("not", char, startLn, startCol);
             continue;
         }
+        if(char == "$") {
+            const startLn = ln;
+            const startCol = col;
+            i++;
+            col++;
+            tk("dollar", char, startLn, startCol);
+        }
 
         // if we reach here, it's unknown
         const startLn = ln;
@@ -925,6 +932,28 @@ function parseCond(tokens, i) {
     }
     return { cond, next: i };
 }
+function parseInterpolation(tokens, i) {
+    const interpolation = [];
+    let depth = 0;
+    i++;
+    while(i < tokens.length) {
+        const tk = tokens[i];
+        if(tk.id == "lbrace") depth++;
+        if(tk.id == "rbrace") depth--;
+        if(depth < 0) {
+            let j = 0;
+            const parsed = [];
+            while(j < interpolation.length) {
+                const expr = parseExpr(interpolation, j);
+                parsed.push(expr.node);
+                j = expr.next;
+            }
+            return { parsed, next: j };
+        }
+        i++;
+    }
+    throw new UnterminatedStatementError("interpolation", "}", tokens[i-1]);
+}
 function parseParamList(tokens, i) {
     const list = [];
     let curArg = [];
@@ -1136,6 +1165,12 @@ function parsePrim(tokens, i) {
         const expr = parseCond(tokens, i);
         const res = resolveCond(expr.cond);
         return { node: { type: "Literal", val: res }, next: expr.next };
+    }
+    if(token.id == "dollar" && tokens[i+1].id == "lbrace") {
+        const interpolation = parseInterpolation(tokens, i);
+        // should be a 1-length array of the resulting expression
+        // so something like "foobar" would be [{ "Literal", "foobar"}]
+        return { node: { type: "Literal", val: interpolation.parsed[0] }, next: interpolation.next };
     }
     if(token.id == "lbrace") {
         const obj = parseObject(tokens, i);
@@ -1799,7 +1834,7 @@ async function getModuleFile(pathStr, token) {
             recurse(content.filter(f => f.isDirectory()).map(f => f.name));
         }
     } else if(stat.isFile()) {
-        const js = fs.readFileSync(dir);
+        const js = fs.readFileSync(dir, "utf8");
         return await processImport(js);
     } else {
         throw new IOInvalidPathError(pathStr, token);
