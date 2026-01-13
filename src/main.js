@@ -447,7 +447,7 @@ async function parser(tokens) {
                 const f = imp.module[0];
                 if(!fs.existsSync(path.join(__dirname, f))) throw new IONoFileFoundError(f, tk);
                 const chunks = f.split("+");
-                const fileContent = fs.readFileSync(f, /*fChunks.length == 2 && fChunks[0] != "" && fChunks[1] != "" ? fChunks[1] :*/ "utf8");
+                const fileContent = fs.readFileSync(f, "utf8");
                 const resolveEncoding = () => {
                     if(chunks.length == 2 && chunks[0] != "" && chunks[1] != "") {
                         const decode = (encode) => Buffer.from(fileContent, encode).toString("utf8");
@@ -468,7 +468,7 @@ async function parser(tokens) {
                 }
                 const js = resolveEncoding();
                 const lib = await processImport(js);
-                inject(lib);
+                if(lib != 0) inject(lib);
             } else {
                 // const modName = tokens[i+1].val;
                 const lib = await getModule(...imp.module);

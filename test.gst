@@ -1,5 +1,4 @@
 import ghost
+import "../test.js"
 
-var foo = [123]
-foo[0] = 42
-print(foo[0])
+epicfunc()
