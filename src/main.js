@@ -468,6 +468,7 @@ async function parser(tokens) {
                 }
                 const js = resolveEncoding();
                 const lib = await processImport(js);
+                console.log(lib);
                 if(lib != 0) inject(lib);
             } else {
                 // const modName = tokens[i+1].val;
@@ -1673,7 +1674,7 @@ async function resolveDeps(file) {
         } else throw new Error(`Invalid type received for dependencys array. (expected: 'array', got: '${typeof file.meta.deps}')`);
     }
 }
-async function processImport(js) {
+async function processImport(js, parts) {
     const module = { exports: {} };
     const wrapped = new Function("require", "module", "exports", "runtime", "module_dev", js);
     wrapped(require, module, module.exports, runtime, moduleDev);
@@ -1757,19 +1758,19 @@ async function getModule(...parts) {
     if(await hasFile(url)) {
         // get the file and its content
         const js = await fetchRaw(`modules/${url}.js`);
-        return await processImport(js);
+        return await processImport(js, parts);
     }
     // check for a local file
     if(isLocal(url)) {
         const js = getLocal(url);
-        return await processImport(js);
+        return await processImport(js, parts);
     }
     // run a system search to locate the file
     const { stdout, stderr } = await execAsync(`where /R C:\\ ${url}`);
     if(stderr.length) throw new Error(stderr);
     else if(stdout.length) {
         const js = fs.readFileSync(stdout, "utf8");
-        return await processImport(js);
+        return await processImport(js, parts);
     }
 
     throw new Error(`Could not find module '${url}'.`);
