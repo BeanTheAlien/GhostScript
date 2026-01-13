@@ -12,10 +12,31 @@ class GSDoc {
      */
     fnHeader(gsFunc) {
         const { gsFuncDesire, gsFuncType, gsFuncName, gsFuncArgs } = gsFunc;
-        return `${gsFuncName}(${gsFuncArgs.map(a => a).join(", ")}): ${gsFuncDesire ? "desire " : ""}${gsFuncType ?? "void"}`;
+        return `function ${gsFuncName}(${this.argMap(gsFuncArgs)}): ${this.retType(gsFuncDesire, gsFuncType)}`;
     }
+    /**
+     * Converts a GhostScript method to a string header.
+     * @param {GSMethod} gsMethod - A GhostScript method.
+     * @returns {string} The string version of the header.
+     */
+    mthHeader(gsMethod) {
+        const { gsMethodDesire, gsMethodType, gsMethodAttach, gsMethodName, gsMethodArgs } = gsMethod;
+        return `method<${gsMethodAttach ?? "entity"}> ${gsMethodName}(${this.argMap(gsMethodArgs)}): ${this.retType(gsMethodDesire, gsMethodType)}`;
+    }
+    /**
+     * Converts a GhostScript argument to a string argument.
+     * @param {GSArg} gsArg - A GhostScript argument.
+     * @returns {string} The string version of the argument.
+     */
     argStr(gsArg) {
         const { gsArgDesire, gsArgType, gsArgName, gsArgVal } = gsArg;
+        return `${gsArgName}: ${gsArgDesire ? "desire " : ""}${gsArgType ?? "void"}${gsArgVal ? " = " + gsArgVal : ""}`;
+    }
+    retType(desire, type) {
+        return `${desire ? "desire " : ""}${type ?? "void"}`;
+    }
+    argMap(args) {
+        return args.map(a => this.argStr(a)).join(", ");
     }
     gen(string) {
         const split = string.split("\n").filter(l => l.startsWith("#"));
