@@ -164,6 +164,7 @@ async function main() {
     //const tokens = await lexer(grammar, script);
     //await compile(tokens);
     const tokens = tokenize(script);
+    await preprocess(tokens);
     await parser(tokens);
 }
 main();
@@ -449,49 +450,55 @@ async function parser(tokens) {
         const tk = tokens[i];
         if(tk.id == "keyword" && tk.val == "import") {
             const imp = parseImport(tokens, i);
-            if(!imp.module.length) throw new UnexpectedTerminationError("import", tk);
-            if(imp.type == "file") {
-                const f = imp.module[0];
-                const fp = path.join(__dirname, f);
-                if(!fs.existsSync(fp)) throw new IONoFileFoundError(fp, tk);
-                const [fName, encoding = null] = fp.split("+");
-                const fileContent = fs.readFileSync(fName, "utf8");
-                const resolveEncoding = () => {
-                    if(encoding) {
-                        const decode = (encode) => Buffer.from(fileContent, encode).toString("utf8");
-                        if(encoding == "utf8") return fileContent;
-                        // from Base64
-                        if(encoding == "base64") return decode("base64");
-                        // from Binary
-                        if(encoding == "bin") return decode("binary");
-                        // from ASCII
-                        if(encoding == "ascii") return decode("ascii");
-                        // from Hexadecimal
-                        if(encoding == "hex") return decode("hex");
-                        // from Universal Character Set
-                        if(encoding == "ucs") return decode("ucs2");
-                    }
-                    return fileContent;
-                }
-                const js = resolveEncoding();
-                const lib = await processImport(js);
-                if(lib != 0) inject(lib);
-            } else {
-                // const modName = tokens[i+1].val;
-                const lib = await getModule(...imp.module);
-                const impName = imp.module.join(".");
-                // if(!lib) {
-                //     console.error(`Could not load module '${impName}'`);
-                //     break;
-                // }
-                if(lib != 0) inject(lib);
-                // i += 2;
-            }
             i = imp.next;
             continue;
         }
+        // if(tk.id == "keyword" && tk.val == "import") {
+        //     const imp = parseImport(tokens, i);
+        //     if(!imp.module.length) throw new UnexpectedTerminationError("import", tk);
+        //     if(imp.type == "file") {
+        //         const f = imp.module[0];
+        //         const fp = path.join(__dirname, f);
+        //         if(!fs.existsSync(fp)) throw new IONoFileFoundError(fp, tk);
+        //         const [fName, encoding = null] = fp.split("+");
+        //         const fileContent = fs.readFileSync(fName, "utf8");
+        //         const resolveEncoding = () => {
+        //             if(encoding) {
+        //                 const decode = (encode) => Buffer.from(fileContent, encode).toString("utf8");
+        //                 if(encoding == "utf8") return fileContent;
+        //                 // from Base64
+        //                 if(encoding == "base64") return decode("base64");
+        //                 // from Binary
+        //                 if(encoding == "bin") return decode("binary");
+        //                 // from ASCII
+        //                 if(encoding == "ascii") return decode("ascii");
+        //                 // from Hexadecimal
+        //                 if(encoding == "hex") return decode("hex");
+        //                 // from Universal Character Set
+        //                 if(encoding == "ucs") return decode("ucs2");
+        //             }
+        //             return fileContent;
+        //         }
+        //         const js = resolveEncoding();
+        //         const lib = await processImport(js);
+        //         if(lib != 0) inject(lib);
+        //     } else {
+        //         // const modName = tokens[i+1].val;
+        //         const lib = await getModule(...imp.module);
+        //         const impName = imp.module.join(".");
+        //         // if(!lib) {
+        //         //     console.error(`Could not load module '${impName}'`);
+        //         //     break;
+        //         // }
+        //         if(lib != 0) inject(lib);
+        //         // i += 2;
+        //     }
+        //     i = imp.next;
+        //     continue;
+        // }
         const expr = parseExpr(tokens, i);
         i = expr.next;
+        if(!expr.node) continue;
         interp(expr.node);
     }
 }
@@ -542,23 +549,30 @@ async function preprocess(tokens) {
             i = imp.next;
             continue;
         }
-        // if(tk.id == "keyword" && tk.val == "var" && tokens[i+1] && tokens[i+1].id == "id") {
-        //     const name = tokens[i+1].val;
-        //     if(tokens[i+2] && tokens[i+2].id == "eqls") {
-        //         //if(tokens[i+2].id != "eqls") throw new Error("Expected '='.");
-        //         //if(!tokens[i+3]) throw new Error(`Missing assignment value of '${name}'.`);
-        //         const expr = parseExpr(tokens, i + 3);
-        //         return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
-        //     }
-        //     return { node: { type: "Declaration", val: name }, next: i + 2 };
-        // }
-        // if(token.id == "keyword" && (token.val == "function" || token.val == "method")) {
-        //     const funcHeader = parseBlockHeader(tokens, i);
-        //     const header = funcHeader.node.val;
-        //     const funcBody = parseBlock(tokens, funcHeader.next);
-        //     const type = header.type == "function" ? "FunctionDeclaration" : "MethodDeclaration";
-        //     return { node: { type, val: [header, funcBody] }, next: funcBody.next + 1 };
-        // }
+        if(tk.id == "keyword" && tk.val == "var" && tokens[i+1] && tokens[i+1].id == "id") {
+            const name = tokens[i+1].val;
+            if(tokens[i+2] && tokens[i+2].id == "eqls") {
+                //if(tokens[i+2].id != "eqls") throw new Error("Expected '='.");
+                //if(!tokens[i+3]) throw new Error(`Missing assignment value of '${name}'.`);
+                const expr = parseExpr(tokens, i+3);
+                i = expr.next;
+                interp({ type: "Assignment", val: [name, expr.node] });
+                continue;
+            }
+            i += 2;
+            interp({ type: "Declaration", val: name });
+            continue;
+        }
+        if(tk.id == "keyword" && (tk.val == "function" || tk.val == "method")) {
+            const funcHeader = parseBlockHeader(tokens, i);
+            const header = funcHeader.node.val;
+            const funcBody = parseBlock(tokens, funcHeader.next);
+            const type = header.type == "function" ? "FunctionDeclaration" : "MethodDeclaration";
+            interp({ type, val: [header, funcBody] });
+            i = funcBody.next + 1;
+            continue;
+        }
+        i++;
     }
 }
 function parseFunc(tokens, i) {
@@ -1147,9 +1161,8 @@ function getLine(tokens, ln) {
 function parsePrim(tokens, i) {
     const token = tokens[i];
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
-        const name = token.val;
         const expr = parseExpr(tokens, i+2);
-        return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
+        return { next: expr.next };
     }
     if(token.id == "lparen") {
         const expr = parseExpr(tokens, i + 1);
@@ -1157,21 +1170,18 @@ function parsePrim(tokens, i) {
         return { node: expr.node, next: expr.next + 1 };
     }
     if(token.id == "keyword" && token.val == "var" && tokens[i+1] && tokens[i+1].id == "id") {
-        const name = tokens[i+1].val;
         if(tokens[i+2] && tokens[i+2].id == "eqls") {
             //if(tokens[i+2].id != "eqls") throw new Error("Expected '='.");
             //if(!tokens[i+3]) throw new Error(`Missing assignment value of '${name}'.`);
             const expr = parseExpr(tokens, i + 3);
-            return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
+            return { next: expr.next };
         }
-        return { node: { type: "Declaration", val: name }, next: i + 2 };
+        return { next: i + 2 };
     }
     if(token.id == "keyword" && (token.val == "function" || token.val == "method")) {
         const funcHeader = parseBlockHeader(tokens, i);
-        const header = funcHeader.node.val;
         const funcBody = parseBlock(tokens, funcHeader.next);
-        const type = header.type == "function" ? "FunctionDeclaration" : "MethodDeclaration";
-        return { node: { type, val: [header, funcBody] }, next: funcBody.next + 1 };
+        return { next: funcBody.next + 1 };
     }
     if(token.id == "keyword" && (token.val == "if" || token.val == "while")) {
         const condHeader = parseBlockHeader(tokens, i);

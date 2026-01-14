@@ -1,4 +1,4 @@
 import ghost
-import "../test.js"
 
-epicfunc()
+println(foo)
+var foo = "bar"
