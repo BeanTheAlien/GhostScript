@@ -1158,6 +1158,9 @@ function genInstance(meta, args) {
 function getLine(tokens, ln) {
     return tokens.filter(tk => tk.ln == ln).map(tk => tk.val).join("");
 }
+function isNormal(token) {
+    return token.id == "id" || token.id == "string" || token.id == "num";
+}
 function parsePrim(tokens, i) {
     const token = tokens[i];
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
@@ -1229,14 +1232,14 @@ function parsePrim(tokens, i) {
         // double opr, like ++, --
         return { node: { type: "IdentifierOperation", val: [token.val, tokens[i+1].val, quan] }, next: i+(tokens[i+3] ? 3 : 2) };
     }
-    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && !oprList.includes(tokens[i+1].val))) {
+    if(isNormal(token) && tokens[i+1] && (tokens[i+1].id == "opr" && !oprList.includes(tokens[i+1].val))) {
         const m = parseEquation(tokens, i);
         return { node: { type: "Literal", val: math.evaluate(m.eq.join(""), { ...runtime.scope }) }, next: m.next };
     }
     // to resolve operator support extension, check if the following value is an opr
     // supporting multiple possible lhs types
     // returns a literal boolean value
-    if((token.id == "id" || token.id == "string" || token.id == "num") && tokens[i+1] && (tokens[i+1].id == "opr" && oprList.includes(tokens[i+1].val))) {
+    if(isNormal(token) && tokens[i+1] && (tokens[i+1].id == "opr" && oprList.includes(tokens[i+1].val))) {
         const expr = parseCond(tokens, i);
         const res = resolveCond(expr.cond);
         return { node: { type: "Literal", val: res }, next: expr.next };
