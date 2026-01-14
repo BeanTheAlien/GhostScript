@@ -200,8 +200,9 @@ Try running your script - you should see "Hello, World!".
 - Implemented file-import support. (14/01/2026)
 - Fixed some errors with non-structured exports. (14/01/2026)
 ## 0.2.1
-- Implemented pre-proccessor system.
-- Minor structure changes and fixes.
+- Implemented pre-proccessor system. (14/01/2026)
+- Minor structure changes and fixes. (14/01/2026)
+- Added `isNormal` function. (14/01/2026)
 
 # Roadmap
 - Further variable support.
