@@ -452,13 +452,13 @@ async function parser(tokens) {
             if(!imp.module.length) throw new UnexpectedTerminationError("import", tk);
             if(imp.type == "file") {
                 const f = imp.module[0];
-                if(!fs.existsSync(path.join(__dirname, f))) throw new IONoFileFoundError(f, tk);
-                const chunks = f.split("+");
-                const fileContent = fs.readFileSync(f, "utf8");
+                const fp = path.join(__dirname, f);
+                if(!fs.existsSync(fp)) throw new IONoFileFoundError(fp, tk);
+                const [fName, encoding = null] = fp.split("+");
+                const fileContent = fs.readFileSync(fName, "utf8");
                 const resolveEncoding = () => {
-                    if(chunks.length == 2 && chunks[0] != "" && chunks[1] != "") {
+                    if(encoding) {
                         const decode = (encode) => Buffer.from(fileContent, encode).toString("utf8");
-                        const encoding = chunks[1];
                         if(encoding == "utf8") return fileContent;
                         // from Base64
                         if(encoding == "base64") return decode("base64");
@@ -469,14 +469,14 @@ async function parser(tokens) {
                         // from Hexadecimal
                         if(encoding == "hex") return decode("hex");
                         // from Universal Character Set
-                        if(encoding == "ucs") return decode("ucs");
+                        if(encoding == "ucs") return decode("ucs2");
                     }
                     return fileContent;
                 }
                 const js = resolveEncoding();
                 const lib = await processImport(js);
-                console.log(lib);
                 if(lib != 0) inject(lib);
+                console.log(js);
             } else {
                 // const modName = tokens[i+1].val;
                 const lib = await getModule(...imp.module);
@@ -1722,22 +1722,26 @@ async function processImport(js, parts) {
     //  2) module already flattened: { wait: GSFunc, print: GSFunc, ghostmodule: {...} }
     const flat = {};
 
+    // Helper to get the real name
+    function getRealName(item) {
+        return item?.gsVarName ||
+            item?.gsFuncName ||
+            item?.gsMethodName ||
+            item?.gsClassName ||
+            item?.gsTypeName ||
+            item?.gsPropName ||
+            item?.gsModifierName ||
+            item?.gsOperatorName ||
+            item?.gsErrorName ||
+            item?.gsEventName ||
+            item?.gsDirectiveName;
+    }
+
     // Helper to flatten arrays of GS* objects into flat[name] = object
     function flattenArr(arr) {
         if(!Array.isArray(arr)) return;
         for(const item of arr) {
-            const nk =
-                item?.gsVarName ||
-                item?.gsFuncName ||
-                item?.gsMethodName ||
-                item?.gsClassName ||
-                item?.gsTypeName ||
-                item?.gsPropName ||
-                item?.gsModifierName ||
-                item?.gsOperatorName ||
-                item?.gsErrorName ||
-                item?.gsEventName ||
-                item?.gsDirectiveName;
+            const nk = getRealName(item);
             if(nk) flat[nk] = item;
         }
     }
