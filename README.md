@@ -25,6 +25,7 @@ Got a project? Try GhostScript and see how much simpler coding can feel.
 
 # Downloads
 ## Stable
+ghostscript@v0.2.0 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.2.0)\
 ghostscript@v0.1.0 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.1.0)\
 ghostscript@v0.0.10 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.10)\
 ghostscript@v0.0.9 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.9)\
