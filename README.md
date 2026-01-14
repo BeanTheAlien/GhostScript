@@ -21,10 +21,11 @@ Use the same name for a variable, function and method? Fine. Add spaces or symbo
 Ghost is alive and evolving - its creator, [@BeanTheAlien](https://github.com/BeanTheAlien), keeps pushing updates that expand what a scripting language can do.\
 Got a project? Try GhostScript and see how much simpler coding can feel.
 
-# Version 0.1.0
+# Version 0.2.1
 
 # Downloads
 ## Stable
+ghostscript@v0.2.1 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.2.1)\
 ghostscript@v0.2.0 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.2.0)\
 ghostscript@v0.1.0 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.1.0)\
 ghostscript@v0.0.10 - [download](https://github.com/BeanTheAlien/GhostScript/releases/tag/v0.0.10)\
