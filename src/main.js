@@ -495,6 +495,72 @@ async function parser(tokens) {
         interp(expr.node);
     }
 }
+async function preprocess(tokens) {
+    let i = 0;
+    while(i < tokens.length) {
+        const tk = tokens[i];
+        if(tk.id == "keyword" && tk.val == "import") {
+            const imp = parseImport(tokens, i);
+            if(!imp.module.length) throw new UnexpectedTerminationError("import", tk);
+            if(imp.type == "file") {
+                const f = imp.module[0];
+                const fp = path.join(__dirname, f);
+                if(!fs.existsSync(fp)) throw new IONoFileFoundError(fp, tk);
+                const [fName, encoding = null] = fp.split("+");
+                const fileContent = fs.readFileSync(fName, "utf8");
+                const resolveEncoding = () => {
+                    if(encoding) {
+                        const decode = (encode) => Buffer.from(fileContent, encode).toString("utf8");
+                        if(encoding == "utf8") return fileContent;
+                        // from Base64
+                        if(encoding == "base64") return decode("base64");
+                        // from Binary
+                        if(encoding == "bin") return decode("binary");
+                        // from ASCII
+                        if(encoding == "ascii") return decode("ascii");
+                        // from Hexadecimal
+                        if(encoding == "hex") return decode("hex");
+                        // from Universal Character Set
+                        if(encoding == "ucs") return decode("ucs2");
+                    }
+                    return fileContent;
+                }
+                const js = resolveEncoding();
+                const lib = await processImport(js);
+                if(lib != 0) inject(lib);
+            } else {
+                // const modName = tokens[i+1].val;
+                const lib = await getModule(...imp.module);
+                const impName = imp.module.join(".");
+                // if(!lib) {
+                //     console.error(`Could not load module '${impName}'`);
+                //     break;
+                // }
+                if(lib != 0) inject(lib);
+                // i += 2;
+            }
+            i = imp.next;
+            continue;
+        }
+        // if(tk.id == "keyword" && tk.val == "var" && tokens[i+1] && tokens[i+1].id == "id") {
+        //     const name = tokens[i+1].val;
+        //     if(tokens[i+2] && tokens[i+2].id == "eqls") {
+        //         //if(tokens[i+2].id != "eqls") throw new Error("Expected '='.");
+        //         //if(!tokens[i+3]) throw new Error(`Missing assignment value of '${name}'.`);
+        //         const expr = parseExpr(tokens, i + 3);
+        //         return { node: { type: "Assignment", val: [name, expr.node] }, next: expr.next };
+        //     }
+        //     return { node: { type: "Declaration", val: name }, next: i + 2 };
+        // }
+        // if(token.id == "keyword" && (token.val == "function" || token.val == "method")) {
+        //     const funcHeader = parseBlockHeader(tokens, i);
+        //     const header = funcHeader.node.val;
+        //     const funcBody = parseBlock(tokens, funcHeader.next);
+        //     const type = header.type == "function" ? "FunctionDeclaration" : "MethodDeclaration";
+        //     return { node: { type, val: [header, funcBody] }, next: funcBody.next + 1 };
+        // }
+    }
+}
 function parseFunc(tokens, i) {
     i += 2;
     let args = [];
