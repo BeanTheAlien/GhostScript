@@ -476,7 +476,6 @@ async function parser(tokens) {
                 const js = resolveEncoding();
                 const lib = await processImport(js);
                 if(lib != 0) inject(lib);
-                console.log(js);
             } else {
                 // const modName = tokens[i+1].val;
                 const lib = await getModule(...imp.module);
@@ -1763,7 +1762,7 @@ async function processImport(js, parts) {
     for(const [k, v] of Object.entries(m)) {
         if(k == "ghostmodule") continue;
         // avoid overwriting array-derived entries, keep whichever exists
-        if(!(k in flat)) flat[k] = v;
+        if(!(k in flat)) flat[getRealName(v)] = v;
     }
 
     const meta = m.ghostmodule || {

@@ -194,6 +194,9 @@ Try running your script - you should see "Hello, World!".
 - Added GSDoc.fnHeader, GSDoc.mthHeader. (13/01/2026)
 - Added (untested) support for string interpolation. (with ${...}) (13/01/2026)
 - Started fixing an error with JS-syntax leak forcing structured exports. (13/01/2026)
+## 0.2.0
+- Implemented file-import support. (14/01/2026)
+- Fixed some errors with non-structured exports. (14/01/2026)
 
 # Roadmap
 - Further variable support.
