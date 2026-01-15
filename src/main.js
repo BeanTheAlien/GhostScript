@@ -453,6 +453,26 @@ async function parser(tokens) {
             i = imp.next;
             continue;
         }
+        if(tk.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
+            const expr = parseExpr(tokens, i+2);
+            i = expr.next;
+            continue;
+        }
+        if(tk.id == "keyword" && tk.val == "var" && tokens[i+1] && tokens[i+1].id == "id") {
+            if(tokens[i+2] && tokens[i+2].id == "eqls") {
+                const expr = parseExpr(tokens, i+3);
+                i = expr.next;
+                continue;
+            }
+            i += 2;
+            continue;
+        }
+        if(tk.id == "keyword" && (tk.val == "function" || tk.val == "method")) {
+            const header = parseBlockHeader(tokens, i);
+            const body = parseBlock(tokens, header.next);
+            i = body.next;
+            continue;
+        }
         // if(tk.id == "keyword" && tk.val == "import") {
         //     const imp = parseImport(tokens, i);
         //     if(!imp.module.length) throw new UnexpectedTerminationError("import", tk);
@@ -498,7 +518,6 @@ async function parser(tokens) {
         // }
         const expr = parseExpr(tokens, i);
         i = expr.next;
-        if(!expr.node) continue;
         interp(expr.node);
     }
 }
@@ -1164,28 +1183,10 @@ function isNormal(token) {
 function parsePrim(tokens, i) {
     const token = tokens[i];
     console.log(tokens)
-    if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
-        const expr = parseExpr(tokens, i+2);
-        return { next: expr.next };
-    }
     if(token.id == "lparen") {
         const expr = parseExpr(tokens, i + 1);
         if(tokens[expr.next].id != "rparen") throw new Error("Expected ')'.");
         return { node: expr.node, next: expr.next + 1 };
-    }
-    if(token.id == "keyword" && token.val == "var" && tokens[i+1] && tokens[i+1].id == "id") {
-        if(tokens[i+2] && tokens[i+2].id == "eqls") {
-            //if(tokens[i+2].id != "eqls") throw new Error("Expected '='.");
-            //if(!tokens[i+3]) throw new Error(`Missing assignment value of '${name}'.`);
-            const expr = parseExpr(tokens, i + 3);
-            return { next: expr.next };
-        }
-        return { next: i + 2 };
-    }
-    if(token.id == "keyword" && (token.val == "function" || token.val == "method")) {
-        const funcHeader = parseBlockHeader(tokens, i);
-        const funcBody = parseBlock(tokens, funcHeader.next);
-        return { next: funcBody.next + 1 };
     }
     if(token.id == "keyword" && (token.val == "if" || token.val == "while")) {
         const condHeader = parseBlockHeader(tokens, i);
@@ -1613,6 +1614,26 @@ function interp(node) {
         default:
             console.error("interp: unknown node:", node);
             throw new Error(`Unknown node with type '${node.type}'.`);
+    }
+}
+async function exec(cmd) {
+    switch(cmd.type) {
+        case "get": {
+            const { name } = cmd;
+            return runtime.get(name);
+        }
+        case "set": {
+            const { name, value } = cmd;
+            runtime.set(name, value);
+        }
+        case "runfn": {
+            const { name, args } = cmd;
+            return runFunc(name, ...args);
+        }
+        case "runmth": {
+            const { name, target, args } = cmd;
+            return runMethod(name, target, ...args);
+        }
     }
 }
 
