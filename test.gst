@@ -1,7 +1,5 @@
 import ghost
 
-function Hello() {
-    return "World"
+function foo() {
+    println("bar")
 }
-
-println(Hello())

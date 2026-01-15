@@ -608,10 +608,11 @@ function parseBlock(tokens, i) {
         const tk = tokens[i];
         if(tk.id == "lbrace") depth++;
         if(tk.id == "rbrace") depth--;
-        if(depth < 0) break;
+        if(depth == 0) break;
         body.push(tk);
         i++;
     }
+    i++;
     // Handle unterminated block statements
     if(depth > 0) throw new UnterminatedStatementError("block", "}", tokens[i - 1]);
     let parsedBody = [];
@@ -621,7 +622,7 @@ function parseBlock(tokens, i) {
         parsedBody.push(parsed.node);
         j = parsed.next;
     }
-    return { node: { type: "BlockStatement", val: parsedBody }, next: i+1 };
+    return { node: { type: "BlockStatement", val: parsedBody }, next: i };
 }
 function parseBlockHeader(tokens, i) {
     // modifiers for the header (desire, type, usw)
@@ -1162,7 +1163,7 @@ function isNormal(token) {
 }
 function parsePrim(tokens, i) {
     const token = tokens[i];
-    console.log(tokens);
+    console.log(tokens)
     if(token.id == "id" && tokens[i+1] && tokens[i+1].id == "eqls") {
         const expr = parseExpr(tokens, i+2);
         return { next: expr.next };
@@ -1280,13 +1281,6 @@ function parsePrim(tokens, i) {
     if(token.id == "semi") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "keyword" && token.val == "target") return { node: { type: "Identifier", val: token.val  }, next: i + 1 };
     if(token.id == "dot") return { node: { type: "Dot", val: token.val }, next: i + 1 };
-    if(token.id == "keyword" && token.val == "return") {
-        if(tokens[i+1] && isNormal(tokens[i+1])) {
-            const expr = parseExpr(tokens, i+1);
-            return { node: { type: "Return", val: expr.node }, next: expr.next };
-        }
-        return { node: { type: "Return", val: undefined }, next: i+1 };
-    }
     throw new UnexpectedTokenError(token);
 }
 function parseArguments(tokens, i) {
@@ -1423,13 +1417,8 @@ function interp(node) {
             return node.val.map(v => interp(v));
         
         case "BlockStatement":
-            for(let i = 0; i < node.val.length; i++) {
-                const res = interp(node.val[i]);
-                if(res && res.type == "Return") {
-                    return res;
-                }
-            }
-            return undefined;
+            node.val.forEach(v => interp(v));
+            break;
         
         case "FunctionDeclaration": {
             const { type, mods, name, params } = node.val[0];
@@ -1618,8 +1607,6 @@ function interp(node) {
             runtime.set(id, v);
             break;
         }
-        case "Return":
-            return { type: "Return", val: interp(node.val) };
         // case "InstanceCreation":
         //     const [cl, args] = node.val;
         //     return new interp({ type: "CallExpression", val: runtime.get(cl).meta.builder(args) });
