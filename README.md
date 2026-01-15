@@ -203,6 +203,7 @@ Try running your script - you should see "Hello, World!".
 - Implemented pre-proccessor system. (14/01/2026)
 - Minor structure changes and fixes. (14/01/2026)
 - Added `isNormal` function. (14/01/2026)
+- Worked on implementing proper return support. (15/01/2026)
 
 # Roadmap
 - Further variable support.

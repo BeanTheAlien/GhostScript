@@ -1,4 +1,7 @@
 import ghost
 
-println(foo)
-var foo = "bar"
+function Hello() {
+    return "World"
+}
+
+println(Hello())
