@@ -1280,6 +1280,12 @@ function parsePrim(tokens, i) {
     if(token.id == "semi") return { node: { type: "Literal", val: token.val }, next: i + 1 };
     if(token.id == "keyword" && token.val == "target") return { node: { type: "Identifier", val: token.val  }, next: i + 1 };
     if(token.id == "dot") return { node: { type: "Dot", val: token.val }, next: i + 1 };
+    if(token.id == "keyword" && token.val == "return") {
+        if(tokens[i+1] && isNormal(tokens[i+1])) {
+            return { node: { type: "ReturnStatement", val: [tokens, i+1] }, next: i+1 };
+        }
+        return { node: { type: "ReturnStatement", val: undefined }, next: i+1 };
+    }
     throw new UnexpectedTokenError(token);
 }
 function parseArguments(tokens, i) {
