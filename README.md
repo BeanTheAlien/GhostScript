@@ -210,6 +210,8 @@ Try running your script - you should see "Hello, World!".
 ## 0.0.0 (11/03/2026)
 - Added imports.
 - Started porting old content.
+## 0.0.1 (12/03/2026)
+- Ported tons of old content.
 
 # Roadmap
 - Further variable support.
