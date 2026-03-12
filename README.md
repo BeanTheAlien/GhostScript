@@ -206,6 +206,11 @@ Try running your script - you should see "Hello, World!".
 - Reverted content. Working on fixing everything. (15/01/2026)
 - Moved content handled in preproccessor to be skipped by parser. (15/01/2026)
 
+# Changelog (TS)
+## 0.0.0 (11/03/2026)
+- Added imports.
+- Started porting old content.
+
 # Roadmap
 - Further variable support.
 - Cached imports.
