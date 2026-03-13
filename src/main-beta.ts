@@ -52,7 +52,7 @@ const beta = hasFlag("beta");
 
 const config: ItemMap<string, string> = {};
 if(Exists("C:\\GhostScript")) {
-    Object.assign(config, ReadJSON("C:\\GhostScript\\config.json"));
+    Object.assign(config, ReadJSON("C:\\GhostScript\\gsconfig.json"));
 }
 
 class Runtime {

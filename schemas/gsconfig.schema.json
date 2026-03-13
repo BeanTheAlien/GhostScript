@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["untyped", "dynamic", "strict", "strictest"],
+      "default": "dynamic"
+    },
+    "def_modules": {
+        "type": "array",
+        "default": []
+    },
+    "tools": {
+        "type": "object",
+        "properties": {
+            "autodebugger": {
+                "type": "boolean",
+                "default": true
+            },
+            "context_awareness": {
+                "type": "boolean",
+                "default": true
+            },
+            "ghost_assistant": {
+                "type": "boolean",
+                "default": true
+            }
+        }
+    },
+    "exec": {
+        "type": "object",
+        "properties": {
+            "latest": {
+                "type": "boolean",
+                "default": false
+            },
+            "verbose": {
+                "type": "boolean",
+                "default": true
+            },
+            "hard_const": {
+                "type": "boolean",
+                "default": true
+            }
+        }
+    }
+  },
+  "additionalProperties": false
+}

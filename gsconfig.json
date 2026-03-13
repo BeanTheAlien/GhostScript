@@ -1,0 +1,14 @@
+{
+    "def_modules": [],
+    "tools": {
+        "autodebugger": true,
+        "context_awareness": true,
+        "ghost_assistant": true
+    },
+    "exec": {
+        "latest": false,
+        "verbose": true,
+        "hard_const": true
+    },
+    "mode": "dynamic"
+}
