@@ -1,9 +1,9 @@
-import * as fs from "fs";
+import * as io from "../../io.js";
 
 export function Load(): object {
     const config: { [x: string]: string }  = {};
-    if(fs.existsSync("C:\\GhostScript\\gsconfig.json")) {
-        Object.assign(config, JSON.parse(fs.readFileSync("C:\\GhostScript\\gsconfig.json")));
+    if(io.exists("C:\\GhostScript\\gsconfig.json")) {
+        Object.assign(config, io.readJSON("C:\\GhostScript\\gsconfig.json"));
     }
     return config;
 }

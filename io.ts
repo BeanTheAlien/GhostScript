@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import { fs } from "./src/defs.js";
 
 function exists(path: fs.PathLike): boolean {
     return fs.existsSync(path);
@@ -18,3 +18,5 @@ function readUTF(path: fs.PathLike): string {
 function rm(path: fs.PathLike) {
     fs.rmSync(path, { recursive: true, force: true });
 }
+
+export { exists, read, write, readJSON, readUTF, rm };

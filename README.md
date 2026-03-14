@@ -212,6 +212,8 @@ Try running your script - you should see "Hello, World!".
 - Started porting old content.
 ## 0.0.1 (12/03/2026)
 - Ported tons of old content.
+## 0.0.2 (13/03/2026)
+- Updated various API handlers.
 
 # Roadmap
 - Further variable support.
