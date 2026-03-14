@@ -214,6 +214,7 @@ Try running your script - you should see "Hello, World!".
 - Ported tons of old content.
 ## 0.0.2 (13/03/2026)
 - Updated various API handlers.
+- Add gitignore command.
 
 # Roadmap
 - Further variable support.

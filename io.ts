@@ -18,5 +18,8 @@ function readUTF(path: fs.PathLike): string {
 function rm(path: fs.PathLike) {
     fs.rmSync(path, { recursive: true, force: true });
 }
+function mk(path: fs.PathLike) {
+    fs.mkdirSync(path);
+}
 
-export { exists, read, write, readJSON, readUTF, rm };
+export { exists, read, write, readJSON, readUTF, rm, mk };
