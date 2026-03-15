@@ -1,8 +1,6 @@
-import * as fs from "fs";
-import * as path from "path";
-import * as cp from "child_process";
-import * as util from "util";
+import { fs, path, cp, util } from "./defs.js";
 import * as mathjs from "mathjs";
+import { cache, config as configAPI, modules } from "./api-bundle.js";
 const execAsync = util.promisify(cp.exec);
 
 type ItemMap<K extends string | number | symbol, V> = { [x in K]: V };
@@ -10,6 +8,8 @@ type StringMap<V> = ItemMap<string, V>;
 type GSObject = any;
 type GSObjectMap = StringMap<GSObject>;
 type GSModule = GSObjectMap;
+
+export type { GSModule, GSObject };
 
 function Exists(path: fs.PathLike): boolean {
     return fs.existsSync(path);
@@ -50,10 +50,7 @@ const debug = hasFlag("debug");
 const safe = hasFlag("safe");
 const beta = hasFlag("beta");
 
-const config: ItemMap<string, string> = {};
-if(Exists("C:\\GhostScript")) {
-    Object.assign(config, ReadJSON("C:\\GhostScript\\gsconfig.json"));
-}
+const config: object = configAPI.load();
 
 class Runtime {
     modules: StringMap<GSModule>;
@@ -75,7 +72,7 @@ class Runtime {
         return Object.hasOwn(this.scope, k);
     }
 }
-const runtime = new Runtime();
+export const runtime = new Runtime();
 runtime.set("true", true);
 runtime.set("false", false);
 runtime.set("null", null);

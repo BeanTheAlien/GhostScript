@@ -21,5 +21,14 @@ function rm(path: fs.PathLike) {
 function mk(path: fs.PathLike) {
     fs.mkdirSync(path);
 }
+function readdir(path: fs.PathLike): fs.Dirent[] {
+    return fs.readdirSync(path, { withFileTypes: true, recursive: true })
+}
+function cpdir(src: string, dest: string) {
+    fs.cpSync(src, dest);
+}
+function cp(src: fs.PathLike, dest: fs.PathLike) {
+    fs.copyFileSync(src, dest);
+}
 
-export { exists, read, write, readJSON, readUTF, rm, mk };
+export { exists, read, write, readJSON, readUTF, rm, mk, readdir, cpdir, cp };

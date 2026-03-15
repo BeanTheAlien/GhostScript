@@ -33,12 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.load = load;
-const io = __importStar(require("../../io.js"));
-function load() {
-    const config = {};
-    if (io.exists("C:\\GhostScript\\gsconfig.json")) {
-        Object.assign(config, io.readJSON("C:\\GhostScript\\gsconfig.json"));
-    }
-    return config;
-}
+exports.modules = exports.config = exports.cache = void 0;
+exports.cache = __importStar(require("./api/cache.js"));
+exports.config = __importStar(require("./api/config.js"));
+exports.modules = __importStar(require("./api/modules.js"));

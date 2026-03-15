@@ -33,12 +33,36 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.load = load;
+exports.init = init;
+exports.read = read;
+exports.write = write;
+exports.writes = writes;
 const io = __importStar(require("../../io.js"));
-function load() {
-    const config = {};
-    if (io.exists("C:\\GhostScript\\gsconfig.json")) {
-        Object.assign(config, io.readJSON("C:\\GhostScript\\gsconfig.json"));
+function fmt(module) {
+    return `gscache/${module}`;
+}
+function init() {
+    if (!io.exists("gscache")) {
+        io.mk("gscache");
     }
-    return config;
+}
+function cacheExists(module) {
+    return io.exists(fmt(module));
+}
+function read(module) {
+    if (cacheExists(module)) {
+        return io.readdir(fmt(module));
+    }
+    return undefined;
+}
+function write(module, file) {
+    const m = fmt(module);
+    if (!cacheExists(m)) {
+        io.mk(m);
+    }
+    io.write(file[0], file[1]);
+}
+function writes(module, files) {
+    for (const s of files)
+        write(module, s);
 }

@@ -1,47 +1,24 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-const fs = __importStar(require("fs"));
+exports.exists = exists;
+exports.read = read;
+exports.write = write;
+exports.readJSON = readJSON;
+exports.readUTF = readUTF;
+exports.rm = rm;
+exports.mk = mk;
+exports.readdir = readdir;
+exports.cpdir = cpdir;
+exports.cp = cp;
+const defs_js_1 = require("./src/defs.js");
 function exists(path) {
-    return fs.existsSync(path);
+    return defs_js_1.fs.existsSync(path);
 }
 function read(path, enc) {
-    return fs.readFileSync(path, enc);
+    return defs_js_1.fs.readFileSync(path, enc);
 }
 function write(path, cont) {
-    fs.writeFileSync(path, cont);
+    defs_js_1.fs.writeFileSync(path, cont);
 }
 function readJSON(path) {
     return JSON.parse(readUTF(path));
@@ -50,5 +27,17 @@ function readUTF(path) {
     return read(path, "utf8");
 }
 function rm(path) {
-    fs.rmSync(path, { recursive: true, force: true });
+    defs_js_1.fs.rmSync(path, { recursive: true, force: true });
+}
+function mk(path) {
+    defs_js_1.fs.mkdirSync(path);
+}
+function readdir(path) {
+    return defs_js_1.fs.readdirSync(path, { withFileTypes: true, recursive: true });
+}
+function cpdir(src, dest) {
+    defs_js_1.fs.cpSync(src, dest);
+}
+function cp(src, dest) {
+    defs_js_1.fs.copyFileSync(src, dest);
 }
