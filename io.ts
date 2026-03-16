@@ -49,14 +49,17 @@ function streamRead(path: fs.PathLike): fs.ReadStream {
 function streamWrite(path: fs.PathLike): fs.WriteStream {
     return stream(path, "write") as fs.WriteStream;
 }
+function readInit(path: fs.PathLike): readline.Interface {
+    return readline.createInterface({
+        input: streamRead(path),
+        crlfDelay: Infinity
+    });
+}
 function readlns(path: fs.PathLike, count: number): string[] {
     count = Math.floor(count);
     const out: string[] = [];
     let ln = 0;
-    const rl = readline.createInterface({
-        input: streamRead(path),
-        crlfDelay: Infinity
-    });
+    const rl = readInit(path);
     rl.on("line", (l) => {
         out.push(l);
         ln++;
@@ -67,5 +70,19 @@ function readlns(path: fs.PathLike, count: number): string[] {
 function readln(path: fs.PathLike): string[] {
     return readlns(path, 1);
 }
+function readuntil(path: fs.PathLike, cb: (line: string) => boolean): string[] {
+    const out: string[] = [];
+    const rl = readInit(path);
+    rl.on("line", (l) => {
+        out.push(l);
+        if(!cb(l)) {
+            rl.close();
+        }
+    });
+    return out;
+}
+function stat(path: fs.PathLike): fs.Stats {
+    return fs.statSync(path);
+}
 
-export { exists, read, write, readJSON, readUTF, rm, mk, readdir, cpdir, cp, stream, streamRead, streamWrite, readlns, readln };
+export { exists, read, write, readJSON, readUTF, rm, mk, readdir, cpdir, cp, stream, streamRead, streamWrite, readlns, readln, readuntil, stat };

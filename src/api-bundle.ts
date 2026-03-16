@@ -1,3 +1,3 @@
-export * as cache from "./api/cache.js";
-export * as config from "./api/config.js";
-export * as modules from "./api/modules.js";
+export * as Cache from "./api/cache.js";
+export * as Config from "./api/config.js";
+export * as Modules from "./api/modules.js";

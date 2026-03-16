@@ -215,6 +215,9 @@ Try running your script - you should see "Hello, World!".
 ## 0.0.2 (13/03/2026)
 - Updated various API handlers.
 - Add gitignore command.
+## 0.0.3 (15/03/2026)
+- Updated APIs.
+- Updated handling to properly test for a `*.gse` file.
 
 # Roadmap
 - Further variable support.

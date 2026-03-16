@@ -1,6 +1,6 @@
-import { fs, path, cp, util } from "./defs.js";
+import { fs, path, cp, util, io } from "./defs.js";
 import * as mathjs from "mathjs";
-import { cache, config as configAPI, modules } from "./api-bundle.js";
+import { Cache, Config, Modules } from "./api-bundle.js";
 const execAsync = util.promisify(cp.exec);
 
 type ItemMap<K extends string | number | symbol, V> = { [x in K]: V };
@@ -11,27 +11,12 @@ type GSModule = GSObjectMap;
 
 export type { GSModule, GSObject };
 
-function Exists(path: fs.PathLike): boolean {
-    return fs.existsSync(path);
-}
-function Read(path: fs.PathLike, enc: BufferEncoding): string {
-    return fs.readFileSync(path, enc);
-}
-function Write(path: fs.PathLike, cont: string) {
-    fs.writeFileSync(path, cont);
-}
-function ReadJSON(path: fs.PathLike): object {
-    return JSON.parse(ReadUTF(path));
-}
-function ReadUTF(path: fs.PathLike): string {
-    return Read(path, "utf8");
-}
-
 class ErrRoot extends Error { constructor(name: string, msg: string) { super(msg); this.name = name; } }
 class HTTPError extends ErrRoot { constructor(res: Response, url: string) { super("HTTPError", `HTTP Error: ${res.status} (${res.statusText}) (url: ${url})`); } }
 class NoFileError extends ErrRoot { constructor() { super("NoFileError", "Cannot execute without 'file' parameter."); } }
 class GSErr extends ErrRoot { constructor(name: string, msg: string, tk: Token) { super(name, `${msg} (ln ${tk.ln}, col ${tk.col})`); } }
 class UnexpectedTokenError extends GSErr { constructor(tk: Token) { super("UnexpectedTokenError", `Unexpected token with id '${tk.id}'.`, tk); } }
+class NoFileExistsError extends ErrRoot { constructor(n: string) { super("NoFileExistsError", `No file exists with name '${n}'.`); } }
 
 const [,, ...args] = process.argv;
 function flagFmt(flag: string): string {
@@ -50,7 +35,7 @@ const debug = hasFlag("debug");
 const safe = hasFlag("safe");
 const beta = hasFlag("beta");
 
-const config: object = configAPI.load();
+const config: object = Config.load();
 
 class Runtime {
     modules: StringMap<GSModule>;
@@ -82,7 +67,17 @@ var moduleDev = null;
 const rawLink = "https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/main/ghost";
 
 async function main(): Promise<void> {
-    const script = ReadUTF(`${file}.gst`);
+    const gst = `${file}.gst`;
+    const gse = `${file}.gse`;
+    if(!io.exists(gst)) throw new NoFileExistsError(file);
+    let script: string = io.readUTF(gst);
+    let mode = 0;
+    if(io.exists(gse)) {
+        if(io.stat(gst).mtime <= io.stat(gse).mtime) {
+            script = io.readUTF(gse);
+            mode = 1;
+        }
+    }
     const tokens = await tokenize(script);
     await parser(tokens);
 }
