@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const cp = require("child_process");
+const pathCreate = require("../path.js");
 
 const grnsqr = "🟩";
 const empty = "⬛";
@@ -76,16 +77,7 @@ async function writeFiles() {
 }
 
 async function WritePATH() {
-    console.log("Creating PATH backup file...");
-    cp.exec("echo %PATH% > path_backup.txt");
-
-    console.log("Writing to PATH...");
-    cp.exec(`setx PATH "%PATH%;C:\\GhostScript"`);
-    cp.exec(`setx PATHEXE "%PATHEXE;.gst"`);
-    cp.exec(`assoc .gst=ghostscript`);
-    cp.exec(`ftype ghostscript="C:\\GhostScript\\ghostscript.exe" "%1"`);
-    cp.exec(`reg add "HKEY_CLASSES_ROOT\\ghostscript" /ve /d "GhostScript" /f`);
-
+    pathCreate.create("C:\\GhostScript", "gst", "ghostscript", "ghostscript.exe", "ghostscript", "GhostScript", true);
     await writeFiles();
 }
 
