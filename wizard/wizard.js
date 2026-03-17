@@ -77,7 +77,9 @@ async function writeFiles() {
 }
 
 async function WritePATH() {
-    pathCreate.create("C:\\GhostScript", "gst", "ghostscript", "ghostscript.exe", "ghostscript", "GhostScript", true);
+    const core = (ext, assoc, key, name) => pathCreate.create("C:\\GhostScript", ext, assoc, "ghostscript.exe", key, name, true);
+    core("gst", "GhostScript File", "ghostscript", "GhostScript");
+    core("gse", "GhostScript Executable File", "ghostscript_executable", "GhostScriptExecutable");
     await writeFiles();
 }
 
