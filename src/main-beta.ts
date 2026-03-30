@@ -1,15 +1,25 @@
 import { fs, path, cp, util, io } from "./defs.js";
 import * as mathjs from "mathjs";
 import { Cache, Config, Modules, Tokenizer, Parser, Interp, Errors } from "./api-bundle.js";
+import * as gs from "./module_dev.js";
 const execAsync = util.promisify(cp.exec);
 
 type ItemMap<K extends string | number | symbol, V> = { [x in K]: V };
 type StringMap<V> = ItemMap<string, V>;
-type GSObject = any;
-type GSObjectMap = StringMap<GSObject>;
-type GSModule = GSObjectMap;
+type GSObjectMap = StringMap<gs.GSCore>;
+type GSModuleMeta = {
+    name: string,
+    desc: string,
+    version: string,
+    author: string,
+    root: string,
+    reqroot: boolean,
+    defroot: string,
+    deps?: string | string[]
+};
+type GSModule = { exports: GSObjectMap } & { meta: GSModuleMeta };
 
-export type { GSModule, GSObject };
+export type { GSModule, GSModuleMeta };
 
 const [,, ...args] = process.argv;
 function flagFmt(flag: string): string {

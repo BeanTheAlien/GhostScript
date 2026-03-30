@@ -33,9 +33,10 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.path = exports.util = exports.cp = exports.fs = void 0;
+exports.path = exports.io = exports.util = exports.cp = exports.fs = void 0;
 exports.fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 exports.path = path;
 exports.cp = __importStar(require("child_process"));
 exports.util = __importStar(require("util"));
+exports.io = __importStar(require("../io.js"));

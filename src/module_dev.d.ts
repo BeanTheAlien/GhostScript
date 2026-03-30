@@ -1,21 +1,22 @@
 type MbArr<T> = T | T[];
 type Attach = MbArr<GSType>;
 type Mods = MbArr<GSMod>;
-interface GSVarData {
-    gsVarMods: GSMod[];
+interface GSCore {}
+interface GSVarData extends GSCore {
+    gsVarMods: Mods;
     gsVarType: GSType;
     gsVarDesire: boolean;
     gsVarName: string;
     gsVarVal: any;
 }
-interface GSFuncData {
+interface GSFuncData extends GSCore {
     gsFuncDesire: boolean;
     gsFuncType: GSType;
     gsFuncName: string;
     gsFuncArgs: GSArg[];
     gsFuncBody: Function;
 }
-interface GSMethodData {
+interface GSMethodData extends GSCore {
     gsMethodDesire: boolean;
     gsMethodType: GSType;
     gsMethodName: string;
@@ -23,42 +24,42 @@ interface GSMethodData {
     gsMethodArgs: GSArg[];
     gsMethodBody: Function;
 }
-interface GSClassData {
+interface GSClassData extends GSCore {
     gsClassType: string;
     gsClassName: string;
     gsClassBuilder: Function;
 }
-interface GSPropData {
+interface GSPropData extends GSCore {
     gsPropDesire: boolean;
     gsPropAttach: Attach;
     gsPropName: string;
     gsPropGet: Function;
     gsPropSet: Function;
 }
-interface GSTypeData {
+interface GSTypeData extends GSCore {
     gsTypeName: string;
     gsTypeTest: <T>(v: T) => boolean;
 }
-interface GSModData {
+interface GSModData extends GSCore {
     gsModAttach: Attach;
     gsModName: string;
     gsModGet: Function;
     gsModSet: Function;
 }
-interface GSOprData {
+interface GSOprData extends GSCore {
     gsOprName: string;
     gsOprExec: Function;
 }
-interface GSDirectiveData {
+interface GSDirectiveData extends GSCore {
     gsDirectiveName: string;
     gsDirectiveExec: Function;
 }
-interface GSPropData {
+interface GSPropData extends GSCore {
     gsPropName: string;
     gsPropGet: Function;
     gsPropSet: Function;
 }
-interface GSArgData {
+interface GSArgData extends GSCore {
     gsArgName: string;
     gsArgVal: any;
     gsArgDesire: boolean;
@@ -124,8 +125,22 @@ declare class GSProp implements GSPropData {
     gsPropSet: Function;
 }
 
+type Dev = {
+    "GSVar": GSVar,
+    "GSFunc": GSFunc,
+    "GSMethod": GSMethod,
+    "GSClass": GSClass,
+    "GSType": GSType,
+    "GSProp": GSProp,
+    "GSMod": GSMod,
+    "GSOpr": GSOpr,
+    "GSDirective": GSDirective,
+    "GSArg": GSArg
+};
+
 export {
     GSVar, GSFunc, GSMethod, GSClass,
     GSType, GSProp, GSMod, GSOpr,
     GSDirective, GSArg
 };
+export type { GSCore, Dev };

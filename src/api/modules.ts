@@ -1,11 +1,12 @@
-import { cache } from "../api-bundle.js";
+import { Cache } from "../api-bundle.js";
 import { runtime } from "../main-beta.js";
 import type * as main from "../main-beta.js";
 import * as io from "../../io.js";
 import { util, cp } from "../defs.js";
+import * as gs from "../module_dev.js";
 const execAsync = util.promisify(cp.exec);
 
-var dev: any = null;
+var dev: gs.Dev | null = null;
 const root = "https://raw.githubusercontent.com/BeanTheAlien/BeanTheAlien.github.io/ghost";
 type PrmBool = Promise<boolean>;
 type FetchOutput = "text" | "json";
@@ -73,7 +74,11 @@ class FetchHandler {
     }
 }
 async function fetchModuleDev(): Promise<void> {
-    dev = await ft.raw("dev/module_dev.js");
+    const module = { exports: {} };
+    const devStr = await ft.raw("dev/module_dev.js");
+    const fn = new Function("module", "exports", "require", devStr);
+    fn();
+    dev = module.exports as gs.Dev;
 }
 const ft = new FetchHandler();
 async function getModule(...parts: string[]): Promise<main.GSModule | number> {
@@ -87,7 +92,7 @@ async function getModule(...parts: string[]): Promise<main.GSModule | number> {
             // retrieve the file (removes '.js' ending)
             const file = (await getModule(url, f.slice(0, -3))) as main.GSModule;
             inject(file);
-            await resolveDeps(file);
+            await resolveDeps(file.meta);
         }
         return 0;
     }
@@ -116,7 +121,7 @@ function inject(m: main.GSModule) {
     // always keep module object available
     runtime.modules[m.meta.name] = m;
     // if reqroot is false, inject exported names into runtime.scope
-    if(m.meta && m.meta.reqroot == false) {
+    if(m.meta && !m.meta.reqroot) {
         for(const [k, v] of Object.entries(m.exports)) {
             // avoid clobbering existing names unless you want to
             if(runtime.has(k)) {
@@ -131,13 +136,16 @@ function inject(m: main.GSModule) {
         runtime.scope[rootName] = m.exports;
     }
 }
-async function resolveDeps(file: main.GSModule) {
-    if(file.meta && file.meta.deps) {
-        if(Array.isArray(file.meta.deps)) {
-            for(const d of file.meta.deps) {
+async function resolveDeps(meta: main.GSModuleMeta) {
+    if(meta.deps) {
+        if(Array.isArray(meta.deps)) {
+            for(const d of meta.deps) {
                 const dep = (await getModule(root, d.endsWith(".js") ? d.slice(0, -3) : d)) as main.GSModule;
                 inject(dep);
             }
+        } else {
+            const d = meta.deps;
+            inject((await getModule(root, d.endsWith(".js") ? d.slice(0, -3) : d)) as main.GSModule);
         }
     }
 }
@@ -150,25 +158,24 @@ async function processImport(js: string, parts: string[]) {
     // Support two cases:
     //  1) module exported structured arrays: { funcs: [...], methods: [...], ... }
     //  2) module already flattened: { wait: GSFunc, print: GSFunc, ghostmodule: {...} }
-    const flat: { [x: string]: any } = {};
+    const flat: { [x: string]: gs.GSCore } & { meta?: main.GSModuleMeta } = {};
 
     // Helper to get the real name
-    function getRealName(item: { [x: string]: any }) {
-        return item?.gsVarName ||
-            item?.gsFuncName ||
-            item?.gsMethodName ||
-            item?.gsClassName ||
-            item?.gsTypeName ||
-            item?.gsPropName ||
-            item?.gsModifierName ||
-            item?.gsOperatorName ||
-            item?.gsErrorName ||
-            item?.gsEventName ||
-            item?.gsDirectiveName;
+    function getRealName(item: gs.GSCore) {
+        return item instanceof gs.GSVar ? item.gsVarName :
+            item instanceof gs.GSFunc ? item.gsFuncName :
+            item instanceof gs.GSMethod ? item.gsMethodName :
+            item instanceof gs.GSClass ? item.gsClassName :
+            item instanceof gs.GSType ? item.gsTypeName :
+            item instanceof gs.GSProp ? item.gsPropName :
+            item instanceof gs.GSMod ? item.gsModName :
+            item instanceof gs.GSOpr ? item.gsOprName :
+            item instanceof gs.GSDirective ? item.gsDirectiveName :
+            undefined;
     }
 
     // Helper to flatten arrays of GS* objects into flat[name] = object
-    function flattenArr(arr: main.GSObject[]) {
+    function flattenArr(arr: gs.GSCore[]) {
         if(!Array.isArray(arr)) return;
         for(const item of arr) {
             const nk = getRealName(item);
@@ -193,15 +200,16 @@ async function processImport(js: string, parts: string[]) {
     for(const [k, v] of Object.entries(m)) {
         if(k == "ghostmodule") continue;
         // avoid overwriting array-derived entries, keep whichever exists
-        if(!(k in flat)) flat[getRealName(v)] = v;
+        const nk = getRealName(v);
+        if(!(k in flat) && nk) flat[nk] = v;
     }
 
     const meta = m.ghostmodule || {
         name: parts.join("."),
         defroot: parts.join("."),
         reqroot: true
-    };
-    await resolveDeps({ meta });
+    } as main.GSModuleMeta;
+    await resolveDeps(meta);
 
     return {
         meta,
