@@ -104,8 +104,7 @@ async function getModule(...parts: string[]): Promise<main.GSModule | number> {
     }
     // check for a local file
     if(io.exists(url)) {
-        const js = io.readUTF(url);
-        return await processImport(js, parts);
+        return await getLocalModule(url, parts);
     }
     // run a system search to locate the file
     const { stdout, stderr } = await execAsync(`where /R C:\\ ${url}`);
@@ -216,3 +215,9 @@ async function processImport(js: string, parts: string[]) {
         exports: flat
     };
 }
+async function getLocalModule(path: string, parts: string[]) {
+    const js = io.readUTF(path);
+    return await processImport(js, parts);
+}
+
+export { getModule, inject, getLocalModule, processImport };

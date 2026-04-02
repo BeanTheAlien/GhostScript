@@ -1,11 +1,14 @@
 import type { Token, TokenList } from "../tokenizer/tokenizer.js";
 import { UnexpectedTokenError } from "../errors.js";
+import { Modules } from "../../api-bundle.js";
 
 type ParsedID = "MemberExpression" | "CallExpression" | "Literal";
 type Node = { type: ParsedID, val: any };
-type Parsed = { node: Node, next: number };
+type Next = { next: number };
+type Parsed = { node: Node } & Next;
 type ParsedList = Parsed[];
 type PrmParsed = Promise<Parsed>;
+type NodeList = Node[];
 
 async function parser(tks: TokenList): Promise<void> {
     let i = 0;
@@ -37,7 +40,7 @@ function parseExpr(tks: TokenList, i: number): Parsed {
     }
     return { node, next };
 }
-type ParsedArgs = { args: Node[], next: number };
+type ParsedArgs = { args: NodeList } & Next;
 function parseArgs(tks: TokenList, i: number): ParsedArgs {
     const args = [];
     while(i < tks.length && tks[i].id != "rparen") {
@@ -48,6 +51,52 @@ function parseArgs(tks: TokenList, i: number): ParsedArgs {
     }
     if(tks[i]?.id != "rparen") throw new Error();
     return { args, next: i + 1 };
+}
+type ParsedCommaList = { list: NodeList } & Next;
+function parseCommaList(tks: TokenList, i: number): ParsedCommaList {
+    const list = [];
+    let count = 1;
+    while(i < tks.length && count > 0) {
+        const expr = parseExpr(tks, i);
+        list.push(expr.node);
+        i = expr.next;
+        if(tks[i]?.id == "comma") {
+            count++;
+        } else {
+            count--;
+        }
+    }
+    return { list, next: i };
+}
+async function parseImport(tks: TokenList, i: number) {
+    const tk = tks[i];
+    // test for string (file / url)
+    if(tk.id == "string") {
+        const v = tk.val;
+        // test for URL (starts with HTTP)
+        if(v.startsWith("http")) {
+            // retrieve
+            const res = await fetch(v);
+            if(!res.ok) throw new Error();
+            const data = await res.text();
+            Modules.processImport(data, [v]);
+        } else {
+            const md = await Modules.getLocalModule(v, v.split("/"));
+            Modules.inject(md);
+        }
+        return;
+    }
+    // retrieve chunks
+    const chunks = [];
+    while(i < tks.length && (tks[i].id == "id" || tks[i].id == "dot")) {
+        // push all the chunks
+        // resolves into a module name
+        chunks.push(tks[i].val);
+        i++;
+    }
+    const md = await Modules.getModule(...chunks);
+    if(typeof md == "number") return;
+    Modules.inject(md);
 }
 
 export { parser };

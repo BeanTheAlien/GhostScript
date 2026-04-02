@@ -218,6 +218,8 @@ Try running your script - you should see "Hello, World!".
 ## 0.0.3 (15/03/2026)
 - Updated APIs.
 - Updated handling to properly test for a `*.gse` file.
+## 0.0.4 (02/04/2026)
+- Added `Parser.parseCommaList`, `Parser.parseImport`.
 
 # Roadmap
 - Further variable support.
