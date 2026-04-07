@@ -205,8 +205,6 @@ Try running your script - you should see "Hello, World!".
 - Added `isNormal` function. (14/01/2026)
 - Reverted content. Working on fixing everything. (15/01/2026)
 - Moved content handled in preproccessor to be skipped by parser. (15/01/2026)
-## 0.2.1.1
-- Started adding `Field` API.
 
 # Changelog (TS)
 ## 0.0.0 (11/03/2026)
@@ -222,6 +220,8 @@ Try running your script - you should see "Hello, World!".
 - Updated handling to properly test for a `*.gse` file.
 ## 0.0.4 (02/04/2026)
 - Added `Parser.parseCommaList`, `Parser.parseImport`.
+## 0.0.5 (07/04/2026)
+- Continued development for the `Field` and `Complex` APIs.
 
 # Roadmap
 - Further variable support.

@@ -1,10 +1,35 @@
+import { Constructor, AbstractConstructor } from "../../gs-types";
+import { runtime } from "../../main-beta";
+import { GSType } from "../../module_dev";
+import { Complex } from "../complex/complex";
 import { UnterminatedError } from "../errors";
 import { Next } from "../parser/parser";
 import { TokenList } from "../tokenizer/tokenizer";
 
-type Field<T> = {
-    accept: T
-};
+type ValTest = (val: any) => boolean;
+const Inst = <T>(v: any, ctor: Constructor<T> | AbstractConstructor<T>) => v instanceof ctor || runtime.get(v) instanceof ctor;
+class Field<T> {
+    test: ValTest;
+    min: number;
+    max: number;
+    def: T | null;
+    constructor(test: ValTest, min: number, max: number, def: T | null) {
+        this.test = test;
+        this.min = min;
+        this.max = max;
+        this.def = def;
+    }
+}
+class TypeField extends Field<GSType> {
+    constructor() {
+        super((v) => Inst(v, GSType), 1, Infinity, null);
+    }
+}
+class ComplexField extends Field<Complex> {
+    constructor() {
+        super((v) => Inst(v, Complex), 1, 1, null);
+    }
+}
 type RetrievedField = { out: TokenList } & Next;
 function getField(tks: TokenList, i: number): RetrievedField {
     // since we assume i points to the '<'
@@ -23,4 +48,4 @@ function getField(tks: TokenList, i: number): RetrievedField {
     throw new UnterminatedError(tks[i], ">");
 }
 
-export type { Field };
+export type { Field, ComplexField, TypeField, getField };
