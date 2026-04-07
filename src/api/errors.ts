@@ -6,5 +6,6 @@ class NoFileError extends ErrRoot { constructor() { super("NoFileError", "Cannot
 class GSErr extends ErrRoot { constructor(name: string, msg: string, tk: Token) { super(name, `${msg} (ln ${tk.ln}, col ${tk.col})`); } }
 class UnexpectedTokenError extends GSErr { constructor(tk: Token) { super("UnexpectedTokenError", `Unexpected token with id '${tk.id}'.`, tk); } }
 class NoFileExistsError extends ErrRoot { constructor(n: string) { super("NoFileExistsError", `No file exists with name '${n}'.`); } }
+class UnterminatedError extends GSErr { constructor(tk: Token, expect: string) { super("UnterminatedError", `Unterminated statement, expected '${expect}'.`, tk); } }
 
-export { HTTPError, NoFileError, UnexpectedTokenError, NoFileExistsError };
+export { HTTPError, NoFileError, UnexpectedTokenError, NoFileExistsError, UnterminatedError };

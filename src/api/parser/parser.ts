@@ -100,4 +100,4 @@ async function parseImport(tks: TokenList, i: number) {
 }
 
 export { parser };
-export type { Parsed };
+export type { Parsed, Next };

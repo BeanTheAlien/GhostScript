@@ -205,6 +205,8 @@ Try running your script - you should see "Hello, World!".
 - Added `isNormal` function. (14/01/2026)
 - Reverted content. Working on fixing everything. (15/01/2026)
 - Moved content handled in preproccessor to be skipped by parser. (15/01/2026)
+## 0.2.1.1
+- Started adding `Field` API.
 
 # Changelog (TS)
 ## 0.0.0 (11/03/2026)
