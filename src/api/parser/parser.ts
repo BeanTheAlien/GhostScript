@@ -2,6 +2,7 @@ import type { Token, TokenList } from "../tokenizer/tokenizer.js";
 import { UnexpectedTerminationError, UnexpectedTokenError } from "../errors.js";
 import { Modules } from "../../api-bundle.js";
 import { io, path } from "../../defs.js";
+import { processImport, inject } from "../modules.js";
 
 type ParsedID = "MemberExpression" | "CallExpression" | "Literal";
 type Node = { type: ParsedID, val: any };
@@ -35,7 +36,11 @@ async function preprocess(tks: TokenList) {
                         if(encoding == "utf16le" || encoding == "utf16" || encoding == "utf-16le" || encoding == "utf-16") return d("utf16le");
                         if(encoding == "lat" || encoding == "latin" || encoding == "lat1" || encoding == "latin1") return d("latin1");
                     }
+                    return fileCont;
                 }
+                const js = re();
+                const lib = await processImport(js, [f]);
+                inject(lib);
             }
         }
     }
