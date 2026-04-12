@@ -2,15 +2,17 @@ import type { Token, TokenList } from "../tokenizer/tokenizer.js";
 import { UnexpectedTerminationError, UnexpectedTokenError } from "../errors.js";
 import { Modules } from "../../api-bundle.js";
 import { io, path } from "../../defs.js";
-import { processImport, inject } from "../modules.js";
+import { processImport, inject, getModule } from "../modules.js";
+import { interp } from "../interp/interp.js";
 
-type ParsedID = "MemberExpression" | "CallExpression" | "Literal";
+type ParsedID = "MemberExpr" | "CallExpr" | "Literal" | "Assignment" | "Dec" | "Id" | "ArrayExpr" | "BlockStm" | "FuncDec" | "MethodDec" | "PropDec" | "ArrayAcs" | "CondHeader" | "PropGet" | "PropSet" | "IdOpr";
 type Node = { type: ParsedID, val: any };
 type Next = { next: number };
 type Parsed = { node: Node } & Next;
 type ParsedList = Parsed[];
 type PrmParsed = Promise<Parsed>;
 type NodeList = Node[];
+export { Node };
 
 async function preprocess(tks: TokenList) {
     let i = 0;
@@ -41,8 +43,26 @@ async function preprocess(tks: TokenList) {
                 const js = re();
                 const lib = await processImport(js, [f]);
                 inject(lib);
+            } else {
+                const lib = await getModule(...imp.module);
+                if(typeof lib != "number") inject(lib);
             }
+            i = imp.next;
+            continue;
         }
+        if(tk.id == "keyword" && tk.val == "var" && tks[i+1]?.id == "id") {
+            const n = tks[i+1].val;
+            if(tks[i+2]?.id == "eqls") {
+                const expr = parseExpr(tks, i+3);
+                i = expr.next;
+                interp({ type: "Assignment", val: [n, expr.node] });
+                continue;
+            }
+            i += 2;
+            interp({ type: "Dec", val: n });
+            continue;
+        }
+        if(tk.id == "keyword" && (tk.val == "func" || tk.val == "method")) {}
     }
 }
 async function parser(tks: TokenList): Promise<void> {
@@ -61,14 +81,14 @@ function parseExpr(tks: TokenList, i: number): Parsed {
         if(tk.id == "dot") {
             const prop = tks[next+1];
             node = {
-                type: "MemberExpression",
+                type: "MemberExpr",
                 val: { obj: node, prop: prop.val }
             };
             next += 2;
         } else if(tk.id == "lparen") {
             const args = parseArgs(tks, next+1);
             node = {
-                type: "CallExpression",
+                type: "CallExpr",
                 val: { callee: node, args: args }
             };
             next = args.next;
