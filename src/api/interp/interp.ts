@@ -1,6 +1,8 @@
 import { runtime } from "../../main-beta.js";
+import { GSArg, GSFunc, GSMethod } from "../../module_dev.js";
 import { findFunction, findMethod, runFunc, runMethod } from "../lookup/lookup.js";
-import type { Node } from "../parser/parser.js";
+import { type Node, type Parsed, type ParsedMemberExpr, type ParsedCallExpr, parseParam } from "../parser/parser.js";
+import { TokenList } from "../tokenizer/tokenizer.js";
 
 function interp(node: Node): any {
     const t = node.type;
@@ -84,10 +86,73 @@ function interp(node: Node): any {
     }
     if(t == "ArrayExpr") return node.val.map(interp);
     if(t == "BlockStm") node.val.forEach(interp);
-    if(t == "FuncDec") {
+    const __declarationParseParams = (params: TokenList[]) => params.map((p) => {
+        const parsed = parseParam(p);
+        return new GSArg({ gsArgName: parsed.name, gsArgVal: parsed.val, gsArgDesire: parsed.desire, gsArgType: parsed.type });
+    });
+    if(t == "FuncDec" || t == "MethodDec") {
         const { mods, name, params } = node.val[0];
         const bodyNode = node.val[1];
         const body = bodyNode.node.val;
+        const ents: { [x: string]: any } = {};
+        const __args = __declarationParseParams(params);
+        const d = mods.includes("desire");
+        const e = runtime.scope.entity;
+        const __resolveFormalArgs = (args: any[], formal: GSArg[]) => {
+            formal.forEach((arg, i) => {
+                const v = args[i] !== undefined ? args[i] : arg.gsArgVal;
+                arg.gsArgVal = v;
+            });
+        }
+        const __setFormalArgs = (formal: GSArg[]) => {
+            formal.forEach(f => {
+                if(runtime.has(f.gsArgName)) ents[f.gsArgName] = runtime.scope[f.gsArgName];
+                runtime.scope[f.gsArgName] = f.gsArgVal;
+            });
+        }
+        const __runBody = (nodes: Node[]) => nodes.forEach(n => interp(n));
+        const __postExecRemoveFormal = (formal: GSArg[]) => {
+            formal.forEach(f => {
+                if(Object.hasOwn(ents, f.gsArgName)) runtime.scope[f.gsArgName] = ents[f.gsArgName];
+                else delete runtime.scope[f.gsArgName];
+            });
+        }
+        const __runThroughExec = (formal: GSArg[], body: Node[]) => {
+            __setFormalArgs(formal);
+            __runBody(body);
+            __postExecRemoveFormal(formal);
+        }
+        if(t == "FuncDec") {
+            const gsf = new GSFunc({
+                gsFuncDesire: d,
+                gsFuncType: e,
+                gsFuncName: name,
+                gsFuncArgs: __args,
+                gsFuncBody: (...args: any[]) => {
+                    const formal = [...gsf.gsFuncArgs];
+                    __resolveFormalArgs(args, formal);
+                    __runThroughExec(formal, body);
+                }
+            });
+            runtime.scope[name] = gsf;
+        } else {
+            const gsm = new GSMethod({
+                gsMethodDesire: d,
+                gsMethodType: e,
+                gsMethodName: name,
+                gsMethodAttach: e,
+                gsMethodArgs: __args,
+                gsMethodBody: (target: any, ...args: any[]) => {
+                    const formal = [...gsm.gsMethodArgs];
+                    __resolveFormalArgs(args, formal);
+                    runtime.scope["target"] = target;
+                    __runThroughExec(formal, body);
+                    delete runtime.scope["target"];
+                }
+            });
+            runtime.scope[name] = gsm;
+        }
+        return;
     }
 }
 

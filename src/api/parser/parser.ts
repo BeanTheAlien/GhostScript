@@ -4,6 +4,8 @@ import { Modules } from "../../api-bundle.js";
 import { io, path } from "../../defs.js";
 import { processImport, inject, getModule } from "../modules.js";
 import { interp } from "../interp/interp.js";
+import { GSMod, GSType } from "../../module_dev.js";
+import { runtime } from "../../main-beta.js";
 
 type ParsedID = "MemberExpr" | "CallExpr" | "Literal" | "Assignment" | "Dec" | "Id" | "ArrayExpr" | "BlockStm" | "FuncDec" | "MethodDec" | "PropDec" | "ArrayAcs" | "CondHeader" | "PropGet" | "PropSet" | "IdOpr";
 type Node = { type: ParsedID, val: any };
@@ -28,7 +30,7 @@ async function preprocess(tks: TokenList) {
                 const fileCont = io.read(fName, "utf8");
                 const re = () => {
                     if(encoding) {
-                        const d = (e: string) => Buffer.from(fileCont, e).toString("utf8");
+                        const d = (e: BufferEncoding) => Buffer.from(fileCont, e).toString("utf8");
                         if(encoding == "utf8" || encoding == "utf-8") return fileCont;
                         if(encoding == "base64" || encoding == "b64") return d("base64");
                         if(encoding == "bin" || encoding == "binary") return fileCont.split(" ").map(s => parseInt(s, 2).toString()).join(" ");
@@ -74,7 +76,9 @@ function parsePrim(tks: TokenList, i: number): Parsed {
 
     throw new UnexpectedTokenError(tk);
 }
-function parseExpr(tks: TokenList, i: number): Parsed {
+type ParsedMemberExpr = { node: { type: ParsedID, val: { obj: Node, prop: string } } } & Next;
+type ParsedCallExpr = { node: { type: ParsedID, val: { callee: Node, args: ParsedArgs } } } & Next;
+function parseExpr(tks: TokenList, i: number): ParsedMemberExpr | ParsedCallExpr {
     let { node, next } = parsePrim(tks, i);
     while(tks[next] && (tks[next].id == "dot" || tks[next].id == "lparen")) {
         const tk = tks[next];
@@ -169,6 +173,64 @@ function parseImport(tks: TokenList, i: number): ParsedImport {
     // Modules.inject(md);
     return { module, next: i+1, type: "module" };
 }
+type ParsedParam = { mods: string[], dedicated: boolean, const: boolean, desire: boolean, type: GSType, name: string, val: any };
+function parseParam(param: TokenList): ParsedParam {
+    let i = 0;
+    const parsed: ParsedParam = {
+        mods: [],
+        dedicated: false,
+        const: false,
+        desire: false,
+        type: runtime.get("entity"),
+        name: "",
+        val: undefined
+    };
+    // mods will come first
+    const modsParsed = parseMods(param, i);
+    const mods = modsParsed.mods;
+    i = modsParsed.next;
+    parsed["mods"] = mods;
+    // GhostScript uses strict modifier positioning for params
+    // dedicated, const, desire, type
+    if(mods.length) {
+        let j = 0;
+        parsed["dedicated"] = !!mods[j] && mods[j] == "dedicated";
+        if(parsed["dedicated"]) j++;
+        parsed["const"] = !!mods[j] && mods[j] == "const";
+        if(parsed["const"]) j++;
+        parsed["desire"] = !!mods[j] && mods[j] == "desire";
+        if(parsed["desire"]) j++;
+        parsed["type"] = mods[j] && runtime.scope[mods[j]] instanceof GSType ? runtime.scope[mods[j]] : runtime.scope.entity;
+    } else {
+        parsed["dedicated"] = false;
+        parsed["const"] = false;
+        parsed["desire"] = false;
+        parsed["type"] = runtime.scope.entity;
+    }
+    // name will come after mods
+    const name = param[i].val;
+    i++;
+    parsed["name"] = name;
+    // possible eqls val
+    parsed["val"] = undefined;
+    if(param[i]?.id == "eqls") {
+        if(param[i+1]) {
+            const val = param[i+1].val;
+            parsed["val"] = val;
+        } else {
+            throw new Error(`Unexpected termination of parameter. (got: '${param}')`);
+        }
+    }
+    return { ...parsed };
+}
+function parseMods(tks: TokenList, i: number) {
+    let mods = [];
+    while(i < tks.length && (tks[i].id == "mod" || runtime.scope[tks[i].val] instanceof GSType)) {
+        mods.push(tks[i].val);
+        i++;
+    }
+    return { mods, next: i };
+}
 
-export { parser };
-export type { Parsed, Next };
+export { parser, parseParam };
+export type { Parsed, Next, ParsedMemberExpr, ParsedCallExpr };

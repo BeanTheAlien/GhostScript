@@ -222,6 +222,8 @@ Try running your script - you should see "Hello, World!".
 - Added `Parser.parseCommaList`, `Parser.parseImport`.
 ## 0.0.5 (07/04/2026)
 - Continued development for the `Field` and `Complex` APIs.
+## 0.0.6 (13/04/2026)
+- Updated `interp` to include construction for `GSFunc` and `GSMethod`.
 
 # Roadmap
 - Further variable support.

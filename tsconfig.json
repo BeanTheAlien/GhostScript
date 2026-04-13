@@ -3,7 +3,8 @@
     "target": "es2022",
     "module": "nodenext",
     "lib": ["es2022", "dom"],
-    "strict": true
+    "strict": true,
+    "types": ["node"]
   },
   "exclude": ["**/node_modules"]
 }

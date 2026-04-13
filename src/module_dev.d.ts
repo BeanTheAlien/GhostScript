@@ -72,6 +72,7 @@ declare class GSVar implements GSVarData {
     gsVarDesire: boolean;
     gsVarName: string;
     gsVarVal: any;
+    constructor(o: GSVarData);
 }
 declare class GSFunc implements GSFuncData {
     gsFuncDesire: boolean;
@@ -79,6 +80,7 @@ declare class GSFunc implements GSFuncData {
     gsFuncName: string;
     gsFuncArgs: GSArg[];
     gsFuncBody: Function;
+    constructor(o: GSFuncData);
 }
 declare class GSMethod implements GSMethodData {
     gsMethodDesire: boolean;
@@ -87,35 +89,42 @@ declare class GSMethod implements GSMethodData {
     gsMethodAttach: Attach;
     gsMethodArgs: GSArg[];
     gsMethodBody: Function;
+    constructor(o: GSMethodData);
 }
 declare class GSClass implements GSClassData {
     gsClassType: string;
     gsClassName: string;
     gsClassBuilder: Function;
+    constructor(o: GSClassData);
 }
 declare abstract class GSType implements GSTypeData {
     gsTypeName: string;
     abstract gsTypeTest: <T>(v: T) => boolean;
+    constructor(o: GSTypeData);
 }
 declare class GSMod implements GSModData {
     gsModAttach: Attach;
     gsModName: string;
     gsModGet: Function;
     gsModSet: Function;
+    constructor(o: GSModData);
 }
 declare class GSOpr implements GSOprData {
     gsOprName: string;
     gsOprExec: Function;
+    constructor(o: GSOprData);
 }
 declare class GSDirective implements GSDirectiveData {
     gsDirectiveName: string;
     gsDirectiveExec: Function;
+    constructor(o: GSDirectiveData);
 }
 declare class GSArg implements GSArgData {
     gsArgName: string;
     gsArgVal: any;
     gsArgDesire: boolean;
     gsArgType: GSType;
+    constructor(o: GSArgData);
 }
 declare class GSProp implements GSPropData {
     gsPropDesire: boolean;
@@ -123,6 +132,7 @@ declare class GSProp implements GSPropData {
     gsPropName: string;
     gsPropGet: Function;
     gsPropSet: Function;
+    constructor(o: GSPropData);
 }
 
 type Dev = {
