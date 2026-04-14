@@ -14,7 +14,11 @@ type Parsed = { node: Node } & Next;
 type ParsedList = Parsed[];
 type PrmParsed = Promise<Parsed>;
 type NodeList = Node[];
-export { Node };
+interface NodeMap {
+    MemberExpr: ParsedMemberExpr;
+    CallExpr: ParsedCallExpr;
+}
+export { Node, NodeMap };
 
 async function preprocess(tks: TokenList) {
     let i = 0;

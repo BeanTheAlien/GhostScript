@@ -1,9 +1,10 @@
 import { runtime } from "../../main-beta.js";
 import { GSArg, GSFunc, GSMethod } from "../../module_dev.js";
 import { findFunction, findMethod, runFunc, runMethod } from "../lookup/lookup.js";
-import { type Node, type Parsed, type ParsedMemberExpr, type ParsedCallExpr, parseParam } from "../parser/parser.js";
+import { type Node, type Parsed, type ParsedMemberExpr, type ParsedCallExpr, parseParam, NodeMap } from "../parser/parser.js";
 import { TokenList } from "../tokenizer/tokenizer.js";
 
+//<T extends keyof NodeMap>(node: NodeMap[T]["node"])
 function interp(node: Node): any {
     const t = node.type;
     if(t == "Literal") return node.val;
