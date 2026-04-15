@@ -17,6 +17,8 @@ type NodeList = Node[];
 interface NodeMap {
     MemberExpr: ParsedMemberExpr;
     CallExpr: ParsedCallExpr;
+    Literal: LiteralNode;
+    Id: IdNode;
 }
 export { Node, NodeMap };
 
@@ -75,9 +77,14 @@ async function parser(tks: TokenList): Promise<void> {
     let i = 0;
     while(i < tks.length) {}
 }
+type MkNode<T extends ParsedID, V = any> = Node & { node: { type: T, val: V } } & Next;
+type LiteralNode = MkNode<"Literal", string | number>;
+type IdNode = MkNode<"Id", string>;
 function parsePrim(tks: TokenList, i: number): Parsed {
     const tk = tks[i];
-
+    if(tk.id == "id") return { node: { type: "Id", val: tk.val }, next: i+1 };
+    if(tk.id == "string") return { node: { type: "Literal", val: tk.val }, next: i+1 };
+    if(tk.id == "num") return { node: { type: "Literal", val: Number(tk.val) }, next: i+1 };
     throw new UnexpectedTokenError(tk);
 }
 type ParsedMemberExpr = { node: { type: ParsedID, val: { obj: Node, prop: string } } } & Next;
