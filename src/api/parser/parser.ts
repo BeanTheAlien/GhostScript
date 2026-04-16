@@ -19,8 +19,11 @@ interface NodeMap {
     CallExpr: ParsedCallExpr;
     Literal: LiteralNode;
     Id: IdNode;
+    Assignment: AssignmentNode;
+    Dec: DecNode;
 }
 type AssignmentNode = MkNode<"Assignment", [string, (ParsedMemberExpr | ParsedCallExpr)["node"]]>;
+type DecNode = MkNode<"Dec", string>;
 export { Node, NodeMap };
 
 async function preprocess(tks: TokenList) {
