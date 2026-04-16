@@ -1,5 +1,5 @@
 import type { Token, TokenList } from "../tokenizer/tokenizer.js";
-import { UnexpectedTerminationError, UnexpectedTokenError } from "../errors.js";
+import { UnexpectedTerminationError, UnexpectedTokenError, UnterminatedStatementError } from "../errors.js";
 import { Modules } from "../../api-bundle.js";
 import { io, path } from "../../defs.js";
 import { processImport, inject, getModule } from "../modules.js";
@@ -245,6 +245,36 @@ function parseMods(tks: TokenList, i: number) {
         i++;
     }
     return { mods, next: i };
+}
+function retrieveBlock(tks: TokenList, i: number) {
+    let body = [];
+    let depth = 0;
+    i++;
+    while(i < tks.length) {
+        const tk = tks[i];
+        if(tk.id == "lbrace") depth++;
+        if(tk.id == "rbrace") depth--;
+        if(depth == 0) break;
+        body.push(tk);
+        i++;
+    }
+    u++;
+    if(depth > 0) throw new UnterminatedStatementError(tks[i-1, "block", "}"]);
+    return body;
+}
+type BlockStmNode = MkNode<"BlockStm", TokenList>;
+function parseBlock(body: TokenList): BlockStmNode {
+    let parsed = [];
+    let i = 0;
+    while(i < body.length) {
+        const p = parseExpr(body, i);
+        parsed.push(p.node);
+        i = p.next;
+    }
+    return { node: { type: "BlockStm", val: parsed }, next: i };
+}
+function parseBlockHeader(tks: TokenList, i: number) {
+    const headerMods = parseMods(tks, i);
 }
 
 export { parser, parseParam };
