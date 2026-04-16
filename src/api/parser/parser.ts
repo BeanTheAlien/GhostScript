@@ -20,6 +20,7 @@ interface NodeMap {
     Literal: LiteralNode;
     Id: IdNode;
 }
+type AssignmentNode = MkNode<"Assignment", [string, (ParsedMemberExpr | ParsedCallExpr)["node"]]>;
 export { Node, NodeMap };
 
 async function preprocess(tks: TokenList) {
