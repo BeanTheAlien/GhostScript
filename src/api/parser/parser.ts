@@ -259,12 +259,12 @@ function retrieveBlock(tks: TokenList, i: number) {
         i++;
     }
     u++;
-    if(depth > 0) throw new UnterminatedStatementError(tks[i-1, "block", "}"]);
+    if(depth > 0) throw new UnterminatedStatementError(tks[i-1], "block", "}");
     return body;
 }
-type BlockStmNode = MkNode<"BlockStm", TokenList>;
+type BlockStmNode = MkNode<"BlockStm", Node[]>;
 function parseBlock(body: TokenList): BlockStmNode {
-    let parsed = [];
+    let parsed: Node[] = [];
     let i = 0;
     while(i < body.length) {
         const p = parseExpr(body, i);
