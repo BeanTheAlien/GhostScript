@@ -81,7 +81,7 @@ async function parser(tks: TokenList): Promise<void> {
     let i = 0;
     while(i < tks.length) {}
 }
-type MkNode<T extends ParsedID, V = any> = Node & { node: { type: T, val: V } } & Next;
+type MkNode<T extends ParsedID, V = any> = { node: { type: T, val: V } } & Next;
 type LiteralNode = MkNode<"Literal", string | number>;
 type IdNode = MkNode<"Id", string>;
 function parsePrim(tks: TokenList, i: number): Parsed {
@@ -258,7 +258,7 @@ function retrieveBlock(tks: TokenList, i: number) {
         body.push(tk);
         i++;
     }
-    u++;
+    i++;
     if(depth > 0) throw new UnterminatedStatementError(tks[i-1], "block", "}");
     return body;
 }
