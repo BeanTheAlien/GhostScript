@@ -74,7 +74,15 @@ async function preprocess(tks: TokenList) {
             interp({ type: "Dec", val: n });
             continue;
         }
-        if(tk.id == "keyword" && (tk.val == "func" || tk.val == "method")) {}
+        if(tk.id == "keyword" && (tk.val == "func" || tk.val == "method")) {
+            const header = parseBlockHeader(tks, i);
+            const body = parseBlock(tks);
+            const type = header?.type == "function" ? "FuncDec" : "MethodDec";
+            interp({ type, val: { header, body } });
+            i = body.next + 1;
+            continue;
+        }
+        i++;
     }
 }
 async function parser(tks: TokenList): Promise<void> {
