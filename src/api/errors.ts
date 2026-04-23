@@ -9,5 +9,6 @@ class NoFileExistsError extends ErrRoot { constructor(n: string) { super("NoFile
 class UnterminatedError extends GSErr { constructor(tk: Token, expect: string) { super("UnterminatedError", `Unterminated statement, expected '${expect}'.`, tk); } }
 class UnexpectedTerminationError extends GSErr { constructor(tk: Token, typ: string) { super("UnexpectedTerminationError", `Unexpected termination of ${typ}.`, tk); } }
 class UnterminatedStatementError extends GSErr { constructor(tk: Token, typ: string, exc: string) { super("UnterminatedStatementError", `Unterminated statement ${typ} (missing '${exc}').`, tk); } }
+class MissingTokenError extends GSErr { constructor(tk: Token, typ: string, exc: string) { super("MissingTokenError", `Missing '${exc}' in ${typ}.`, tk); } }
 
-export { HTTPError, NoFileError, UnexpectedTokenError, NoFileExistsError, UnterminatedError, UnexpectedTerminationError, UnterminatedStatementError };
+export { HTTPError, NoFileError, UnexpectedTokenError, NoFileExistsError, UnterminatedError, UnexpectedTerminationError, UnterminatedStatementError, MissingTokenError };

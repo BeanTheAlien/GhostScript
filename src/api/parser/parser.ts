@@ -1,5 +1,5 @@
 import type { Token, TokenList } from "../tokenizer/tokenizer.js";
-import { UnexpectedTerminationError, UnexpectedTokenError, UnterminatedStatementError } from "../errors.js";
+import { MissingTokenError, UnexpectedTerminationError, UnexpectedTokenError, UnterminatedStatementError } from "../errors.js";
 import { Modules } from "../../api-bundle.js";
 import { io, path } from "../../defs.js";
 import { processImport, inject, getModule } from "../modules.js";
@@ -275,6 +275,73 @@ function parseBlock(body: TokenList): BlockStmNode {
 }
 function parseBlockHeader(tks: TokenList, i: number) {
     const headerMods = parseMods(tks, i);
+    i = headerMods.next;
+    const mods = headerMods.mods;
+    // header (if, function, usw)
+    const header = tks[i].val;
+    // block declarations
+    if(["function", "method", "prop", "class"].includes(header)) {
+        // get header name
+        i++;
+        const headerName = tks[i].val;
+        // if its a function or method, parse params
+        const headerParams = [];
+        if(header == "function" || header == "method") {
+            // skip lparen
+            i += 2;
+            let curArg = [];
+            while(i < tks.length && tks[i].id != "rparen") {
+                // proccess params
+                if(tks[i].id == "comma") {
+                    headerParams.push(curArg);
+                    curArg = [];
+                    i++;
+                    continue;
+                }
+                curArg.push(tks[i]);
+                i++;
+            }
+            if(curArg.length) headerParams.push(curArg);
+        }
+        return { type: header, mods, name: headerName, params: headerParams, next: i + 1 };
+    }
+    // conditional headers
+    if(["if", "while"].includes(header)) {
+        // move to opening paren
+        i++;
+        if(tks[i].id != "lparen") throw new MissingTokenError(tks[i], "conditional header", "(");
+        // move inside
+        i++;
+        if(tks[i].id == "rparen") throw new UnexpectedTerminationError(tks[i], "conditional header",);
+        let cond = [];
+        let depth = 1;
+        while(i < tks.length && depth > 0) {
+            const tk = tks[i];
+            if(tk.id == "lparen") {
+                // go into another conditional statement
+                depth++;
+                if(depth > 1) cond.push(tk);
+            } else if(tk.id == "rparen") {
+                // move up a level
+                depth--;
+                if(depth > 1) cond.push(tk);
+                else break;
+            } else {
+                cond.push(tk);
+            }
+            i++;
+        }
+        if(depth > 0) throw new UnterminatedStatementError(tks[i-1], "conditional statement", ")");
+        // since the conditional is not parsed, parse it
+        let parsedCond = [];
+        let j = 0;
+        while(j < cond.length) {
+            const parsed = parseExpr(cond, j);
+            parsedCond.push(parsed.node);
+            j = parsed.next;
+        }
+        return { header, cond: parsedCond, next: i + 1 };
+    }
 }
 
 export { parser, parseParam };
