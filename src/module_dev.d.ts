@@ -97,9 +97,9 @@ declare class GSClass implements GSClassData {
     gsClassBuilder: Function;
     constructor(o: GSClassData);
 }
-declare abstract class GSType implements GSTypeData {
+declare class GSType implements GSTypeData {
     gsTypeName: string;
-    abstract gsTypeTest: <T>(v: T) => boolean;
+    gsTypeTest: <T>(v: T) => boolean;
     constructor(o: GSTypeData);
 }
 declare class GSMod implements GSModData {

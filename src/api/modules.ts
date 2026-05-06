@@ -63,6 +63,9 @@ class FetchHandler {
     module(url: string): string {
         return this.fmt(`modules/${url}`);
     }
+    hasModule(moduleName: string) {
+        return io.exists(`lib/${moduleName}`);
+    }
     async hasRemote(url: string): PrmBool {
         return (await this.req(url)).ok;
     }
@@ -84,6 +87,14 @@ const ft = new FetchHandler();
 async function getModule(...parts: string[]): Promise<main.GSModule | number> {
     if(!dev) await fetchModuleDev();
     const url = parts.join("/");
+    // check if its in lib
+    if(ft.hasModule(url)) {
+        // then import through lib
+        const imp = await import(`lib/${url}`) as main.GSModule;
+        inject(imp);
+        await resolveDeps(imp.meta);
+        return 0;
+    }
     // check if the URL has a index.json file
     if(await ft.hasJSON(url)) {
         // recurse through all the files
