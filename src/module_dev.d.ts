@@ -153,4 +153,4 @@ export {
     GSType, GSProp, GSMod, GSOpr,
     GSDirective, GSArg
 };
-export type { GSCore, Dev };
+export type { GSCore, Dev, GSVarData, GSFuncData, GSMethodData, GSClassData, GSTypeData, GSPropData, GSModData, GSOprData, GSDirectiveData, GSArgData };

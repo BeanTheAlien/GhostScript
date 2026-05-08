@@ -6,6 +6,7 @@ const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
+const ghostmodule = internal.createModuleDeclaration("print", "Printing functions.", "1.0.0", "BeanTheAlien", "ghost", false, "printing");
 
 const __msgArg = new GSArg({
     gsArgDesire: false,
@@ -32,8 +33,6 @@ const prompt = new GSFunc({
         gsArgType: gsAny,
         gsArgVal: ""
     })],
-    gsFuncBody: async (q: any) => {
-        return await new Promise(r => rl.question(q, r));
-    }
+    gsFuncBody: async (q: any) => await new Promise(r => rl.question(q, r))
 });
-export { print, println, prompt };
+export { ghostmodule, print, println, prompt };

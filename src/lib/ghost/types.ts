@@ -44,4 +44,16 @@ const gsAny = new GSType({
     gsTypeName: "any",
     gsTypeTest: () => true
 });
-export { gsVoid, gsEntity, gsNum, gsInt, gsFloat, gsString, gsBool, gsArray, gsFunc, gsMethod, gsAny };
+class GSUnionType extends GSType {
+    type1: GSType;
+    type2: GSType;
+    constructor(type1: GSType, type2: GSType, unionName: string) {
+        super({
+            gsTypeName: unionName,
+            gsTypeTest: (v) => type1.gsTypeTest(type1) || type2.gsTypeTest(type2),
+        });
+        this.type1 = type1;
+        this.type2 = type2;
+    }
+}
+export { gsVoid, gsEntity, gsNum, gsInt, gsFloat, gsString, gsBool, gsArray, gsFunc, gsMethod, gsAny, GSUnionType };
