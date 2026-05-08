@@ -1,4 +1,4 @@
-import { GSType } from "../../module_dev";
+import { GSFunc, GSMethod, GSType, GSVar } from "../../module_dev";
 
 const gsVoid = new GSType({
     gsTypeName: "void",
@@ -32,3 +32,16 @@ const gsArray = new GSType({
     gsTypeName: "array",
     gsTypeTest: (v) => Array.isArray(v)
 });
+const gsFunc = new GSType({
+    gsTypeName: "func",
+    gsTypeTest: (v) => typeof v == "function" || v instanceof GSFunc
+});
+const gsMethod = new GSType({
+    gsTypeName: "method",
+    gsTypeTest: (v) => typeof v == "function" || v instanceof GSMethod
+});
+const gsAny = new GSType({
+    gsTypeName: "any",
+    gsTypeTest: () => true
+});
+export { gsVoid, gsEntity, gsNum, gsInt, gsFloat, gsString, gsBool, gsArray, gsFunc, gsMethod, gsAny };
