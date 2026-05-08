@@ -1,0 +1,10 @@
+{
+    "files": [
+        "types.js",
+        "internal.js",
+        "ghost.js",
+        "casts.js",
+        "print.js",
+        "stringutils.js"
+    ]
+}

@@ -63,8 +63,8 @@ class FetchHandler {
     module(url: string): string {
         return this.fmt(`modules/${url}`);
     }
-    hasModule(moduleName: string) {
-        return io.exists(`lib/${moduleName}`);
+    hasLib(libName: string) {
+        return io.exists(`lib/${libName}`);
     }
     async hasRemote(url: string): PrmBool {
         return (await this.req(url)).ok;
@@ -88,7 +88,7 @@ async function getModule(...parts: string[]): Promise<main.GSModule | number> {
     if(!dev) await fetchModuleDev();
     const url = parts.join("/");
     // check if its in lib
-    if(ft.hasModule(url)) {
+    if(ft.hasLib(url)) {
         // then import through lib
         const imp = await import(`lib/${url}`) as main.GSModule;
         inject(imp);
