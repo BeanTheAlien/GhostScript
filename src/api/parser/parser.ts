@@ -22,7 +22,7 @@ interface NodeMap {
     Assignment: AssignmentNode;
     Dec: DecNode;
 }
-type AssignmentNode = MkNode<"Assignment", [string, (ParsedMemberExpr | ParsedCallExpr)["node"]]>;
+type AssignmentNode = MkNode<"Assignment", [string, Node]>;
 type DecNode = MkNode<"Dec", string>;
 export { Node, NodeMap };
 
@@ -99,9 +99,9 @@ function parsePrim(tks: TokenList, i: number): Parsed {
     if(tk.id == "num") return { node: { type: "Literal", val: Number(tk.val) }, next: i+1 };
     throw new UnexpectedTokenError(tk);
 }
-type ParsedMemberExpr = { node: { type: ParsedID, val: { obj: Node, prop: string } } } & Next;
-type ParsedCallExpr = { node: { type: ParsedID, val: { callee: Node, args: ParsedArgs } } } & Next;
-function parseExpr(tks: TokenList, i: number): ParsedMemberExpr | ParsedCallExpr {
+type ParsedMemberExpr = MkNode<"MemberExpr", { obj: Node, prop: string }>;
+type ParsedCallExpr = MkNode<"CallExpr", { callee: Node, args: ParsedArgs }>;
+function parseExpr(tks: TokenList, i: number): Parsed {
     let { node, next } = parsePrim(tks, i);
     while(tks[next] && (tks[next].id == "dot" || tks[next].id == "lparen")) {
         const tk = tks[next];
@@ -352,5 +352,5 @@ function parseBlockHeader(tks: TokenList, i: number) {
     }
 }
 
-export { parser, parseParam };
+export { parser, preprocess, parseParam };
 export type { Parsed, Next, ParsedMemberExpr, ParsedCallExpr };

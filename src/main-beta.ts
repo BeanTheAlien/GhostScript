@@ -82,6 +82,7 @@ async function main(): Promise<void> {
         }
     }
     const tokens = await Tokenizer.tokenize(script);
+    await Parser.preprocess(tokens);
     await Parser.parser(tokens);
 }
 main();
